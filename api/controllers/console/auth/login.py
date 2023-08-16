@@ -10,7 +10,36 @@ from controllers.console.error import AccountNotLinkTenantError
 from controllers.console.setup import setup_required
 from libs.helper import email
 from libs.password import valid_password
-from services.account_service import AccountService, TenantService
+from services.account_service import AccountService, TenantService, RegisterService
+from models.account import Account
+from extensions.ext_database import db
+
+
+class RegisterApi(Resource):
+    """Resource for user login."""
+
+    @setup_required
+    def post(self):
+        """Authenticate user and login."""
+        parser = reqparse.RequestParser()
+        parser.add_argument('email', type=email, required=True, location='json')
+        parser.add_argument('password', type=valid_password, required=True, location='json')
+        parser.add_argument('name', location='json', default='dify_user')
+        args = parser.parse_args()
+
+        # todo: Verify the recaptcha
+        account = Account.query.filter_by(email=args['email']).first()
+        if not account:
+            # Create account
+            account = RegisterService.register(
+                email=args['email'],
+                name=args['name'],
+                password=args['password'],
+            )
+            account.interface_language = 'zh-Hans'
+            db.session.commit()
+        return {'result': 'success'}
+
 
 
 class LoginApi(Resource):
@@ -107,3 +136,4 @@ class ResetPasswordApi(Resource):
 
 api.add_resource(LoginApi, '/login')
 api.add_resource(LogoutApi, '/logout')
+api.add_resource(RegisterApi, '/register')

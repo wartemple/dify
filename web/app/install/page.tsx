@@ -1,6 +1,5 @@
 import React from 'react'
 import classNames from 'classnames'
-import Header from '../signin/_header'
 import style from '../signin/page.module.css'
 import InstallForm from './installForm'
 
@@ -19,11 +18,11 @@ const Install = () => {
           'md:w-[608px] space-between',
         )
       }>
-        <Header />
+        {/* <Header /> */}
         <InstallForm />
-        <div className='px-8 py-6 text-sm font-normal text-gray-500'>
+        {/* <div className='px-8 py-6 text-sm font-normal text-gray-500'>
           © {new Date().getFullYear()} Dify, Inc. All rights reserved.
-        </div>
+        </div> */}
       </div>
     </div>
   )

@@ -2,11 +2,14 @@
 import React, { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/navigation'
+import classNames from 'classnames'
 import useSWR from 'swr'
 import Link from 'next/link'
 import { useContext } from 'use-context-selector'
 import Toast from '../components/base/toast'
+import style from './page.module.css'
 // import Tooltip from '@/app/components/base/tooltip/index'
+import { IS_CE_EDITION, apiPrefix } from '@/config'
 import Button from '@/app/components/base/button'
 import { login, oauth } from '@/service/common'
 import I18n from '@/context/i18n'
@@ -138,8 +141,60 @@ const NormalForm = () => {
 
       <div className="w-full mx-auto mt-8">
         <div className="bg-white ">
+          {!IS_CE_EDITION && (
+            <div className="flex flex-col gap-3 mt-6">
+              <div className='w-full'>
+                <a href={`${apiPrefix}/oauth/login/github`}>
+                  <Button
+                    type='default'
+                    disabled={isLoading}
+                    className='w-full hover:!bg-gray-50 !text-sm !font-medium'
+                  >
+                    <>
+                      <span className={
+                        classNames(
+                          style.githubIcon,
+                          'w-5 h-5 mr-2',
+                        )
+                      } />
+                      <span className="truncate text-gray-800">{t('login.withGitHub')}</span>
+                    </>
+                  </Button>
+                </a>
+              </div>
+              <div className='w-full'>
+                <a href={`${apiPrefix}/oauth/login/google`}>
+                  <Button
+                    type='default'
+                    disabled={isLoading}
+                    className='w-full hover:!bg-gray-50 !text-sm !font-medium'
+                  >
+                    <>
+                      <span className={
+                        classNames(
+                          style.googleIcon,
+                          'w-5 h-5 mr-2',
+                        )
+                      } />
+                      <span className="truncate text-gray-800">{t('login.withGoogle')}</span>
+                    </>
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
+
           {
-            <>
+            IS_CE_EDITION && <>
+              {/* <div className="relative mt-6">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 text-gray-300 bg-white">OR</span>
+                </div>
+              </div> */}
+
               <form onSubmit={() => { }}>
                 <div className='mb-5'>
                   <label htmlFor="email" className="my-2 block text-sm font-medium text-gray-900">
@@ -210,8 +265,21 @@ const NormalForm = () => {
               </form>
             </>
           }
+          {/*  agree to our Terms and Privacy Policy. */}
           <div className="w-hull text-center block mt-2 text-xs text-gray-600">
-            <Link href="/register">注册账号</Link>
+            {t('login.tosDesc')}
+            &nbsp;
+            <Link
+              className='text-primary-600'
+              target={'_blank'}
+              href={locale === 'en' ? 'https://docs.dify.ai/user-agreement/terms-of-service' : 'https://docs.dify.ai/v/zh-hans/yong-hu-xie-yi/fu-wu-xie-yi'}
+            >{t('login.tos')}</Link>
+            &nbsp;&&nbsp;
+            <Link
+              className='text-primary-600'
+              target={'_blank'}
+              href={locale === 'en' ? 'https://docs.dify.ai/user-agreement/privacy-policy' : 'https://docs.dify.ai/v/zh-hans/yong-hu-xie-yi/yin-si-xie-yi'}
+            >{t('login.pp')}</Link>
           </div>
 
         </div>

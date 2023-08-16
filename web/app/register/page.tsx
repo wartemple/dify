@@ -3,7 +3,7 @@ import cn from 'classnames'
 import Forms from './forms'
 import style from './page.module.css'
 
-const SignIn = () => {
+const Register_ = () => {
   return (
     <>
       <div className={cn(
@@ -19,11 +19,7 @@ const SignIn = () => {
             'space-between',
           )
         }>
-          {/* <Header /> */}
           <Forms />
-          {/* <div className='px-8 py-6 text-sm font-normal text-gray-500'>
-            © {new Date().getFullYear()} Dify, Inc. All rights reserved.
-          </div> */}
         </div>
 
       </div>
@@ -32,4 +28,4 @@ const SignIn = () => {
   )
 }
 
-export default SignIn
+export default Register_

@@ -16,6 +16,10 @@ export const login: Fetcher<CommonResponse, { url: string; body: Record<string, 
   return post(url, { body }) as Promise<CommonResponse>
 }
 
+export const register: Fetcher<CommonResponse, { url: string; body: Record<string, any> }> = ({ url, body }) => {
+  return post(url, { body }) as Promise<CommonResponse>
+}
+
 export const setup: Fetcher<CommonResponse, { body: Record<string, any> }> = ({ body }) => {
   return post('/setup', { body }) as Promise<CommonResponse>
 }

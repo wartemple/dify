@@ -1,6 +1,5 @@
 import React from 'react'
 import cn from 'classnames'
-import Header from '../signin/_header'
 import style from '../signin/page.module.css'
 import ActivateForm from './activateForm'
 
@@ -19,7 +18,7 @@ const Activate = () => {
           'space-between',
         )
       }>
-        <Header />
+        {/* <Header /> */}
         <ActivateForm />
         <div className='px-8 py-6 text-sm font-normal text-gray-500'>
           © {new Date().getFullYear()} Dify, Inc. All rights reserved.

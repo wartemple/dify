@@ -31,7 +31,11 @@ class ChatGLMProvider(BaseModelProvider):
                 {
                     'id': 'chatglm-6b',
                     'name': 'ChatGLM-6B',
-                }
+                },
+                {
+                    'id': 'Baichuan-7B',
+                    'name': 'Baichuan-7B',
+                },
             ]
         else:
             return []

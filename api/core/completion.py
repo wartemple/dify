@@ -108,7 +108,7 @@ class Completion:
                 agent_execute_result=agent_execute_result,
                 conversation_message_task=conversation_message_task,
                 memory=memory
-            )
+            ) 
         except ConversationTaskStoppedException:
             return
         except ChunkedEncodingError as e:

@@ -46,6 +46,19 @@ class ChatGLMModel(BaseLLM):
         """
         prompts = self._get_prompt_from_messages(messages)
         return max(self._client.get_num_tokens(prompts), 0)
+        # update: 离线从huggingFace加载token文件修改为加载本地自定义已下载token
+        try:
+            from transformers import GPT2TokenizerFast
+        except ImportError:
+            raise ImportError(
+                "Could not import transformers python package. "
+                "This is needed in order to calculate get_token_ids. "
+                "Please install it with `pip install transformers`."
+            )
+        # create a GPT-2 tokenizer instance
+        tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", cache_dir="gpt2-tokenizer")
+        # tokenize the text using the GPT-2 tokenizer
+        return max(len(tokenizer.encode(prompts)), 0)
 
     def get_token_price(self, tokens: int, message_type: MessageType):
         return decimal.Decimal('0')

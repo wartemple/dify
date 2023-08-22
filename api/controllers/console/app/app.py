@@ -123,7 +123,7 @@ class AppListApi(Resource):
         # The role of the current user in the ta table must be admin or owner
         if current_user.current_tenant.current_role not in ['admin', 'owner']:
             raise Forbidden()
-
+        # TODO:  给登录赋予相关的初始化逻辑
         if args['model_config'] is not None:
             # validate config
             model_configuration = AppModelConfigService.validate_configuration(

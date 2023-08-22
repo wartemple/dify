@@ -13,7 +13,8 @@ from libs.password import valid_password
 from services.account_service import AccountService, TenantService, RegisterService
 from models.account import Account
 from extensions.ext_database import db
-
+from core.model_providers.models.entity.model_params import ModelType
+from core.model_providers.model_factory import ModelFactory
 
 class RegisterApi(Resource):
     """Resource for user login."""
@@ -38,6 +39,8 @@ class RegisterApi(Resource):
             )
             account.interface_language = 'zh-Hans'
             db.session.commit()
+        # TODO: 为用户添加默认的glm引擎
+        # http://172.17.6.32:7777/api/v1/chatglm/message
         return {'result': 'success'}
 
 

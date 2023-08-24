@@ -1,4 +1,4 @@
-FROM llm-promot-api:v0.0.3
+FROM llm-promot-api:base
 
 LABEL maintainer="takatost@gmail.com"
 

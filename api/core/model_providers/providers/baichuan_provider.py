@@ -12,25 +12,21 @@ from core.model_providers.providers.base import BaseModelProvider, CredentialsVa
 from models.provider import ProviderType
 
 
-class ChatGLMProvider(BaseModelProvider):
+class BaichuanProvider(BaseModelProvider):
 
     @property
     def provider_name(self):
         """
         Returns the name of a provider.
         """
-        return 'chatglm'
+        return 'baichuan'
 
     def _get_fixed_model_list(self, model_type: ModelType) -> list[dict]:
         if model_type == ModelType.TEXT_GENERATION:
             return [
                 {
-                    'id': 'chatglm2-6b',
-                    'name': 'ChatGLM2-6B',
-                },
-                {
-                    'id': 'chatglm-6b',
-                    'name': 'ChatGLM-6B',
+                    'id': 'baichuan-7b',
+                    'name': '百川智能-7B',
                 }
             ]
         else:
@@ -58,17 +54,12 @@ class ChatGLMProvider(BaseModelProvider):
         :param model_type:
         :return:
         """
-        model_max_tokens = {
-            'chatglm-6b': 2000,
-            'chatglm2-6b': 32000,
-        }
-
         return ModelKwargsRules(
             temperature=KwargRule[float](min=0, max=2, default=1),
             top_p=KwargRule[float](min=0, max=1, default=0.7),
             presence_penalty=KwargRule[float](enabled=False),
             frequency_penalty=KwargRule[float](enabled=False),
-            max_tokens=KwargRule[int](alias='max_token', min=10, max=model_max_tokens.get(model_name), default=2048),
+            max_tokens=KwargRule[int](alias='max_token', min=10, max=8000, default=2048),
         )
 
     @classmethod

@@ -53,7 +53,6 @@ class RegisterApi(Resource):
         parser.add_argument('password', type=valid_password, required=True, location='json')
         parser.add_argument('name', location='json', default='dify_user')
         args = parser.parse_args()
-
         # todo: Verify the recaptcha
         account = Account.query.filter_by(email=args['email']).first()
         if not account:
@@ -84,6 +83,7 @@ class LoginApi(Resource):
         args = parser.parse_args()
 
         # todo: Verify the recaptcha
+        # 
 
         try:
             account = AccountService.authenticate(args['email'], args['password'])

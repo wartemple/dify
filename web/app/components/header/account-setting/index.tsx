@@ -11,12 +11,10 @@ import DataSourcePage from './data-source-page'
 import ModelPage from './model-page'
 import s from './index.module.css'
 import Modal from '@/app/components/base/modal'
-import { Database03, PuzzlePiece01 } from '@/app/components/base/icons/src/vender/line/development'
-import { Database03 as Database03Solid, PuzzlePiece01 as PuzzlePiece01Solid } from '@/app/components/base/icons/src/vender/solid/development'
 import { User01, Users01 } from '@/app/components/base/icons/src/vender/line/users'
 import { User01 as User01Solid, Users01 as Users01Solid } from '@/app/components/base/icons/src/vender/solid/users'
 import { Globe01 } from '@/app/components/base/icons/src/vender/line/mapsAndTravel'
-import { AtSign, XClose } from '@/app/components/base/icons/src/vender/line/general'
+import { XClose } from '@/app/components/base/icons/src/vender/line/general'
 import { CubeOutline } from '@/app/components/base/icons/src/vender/line/shapes'
 
 const iconClassName = `
@@ -54,18 +52,18 @@ export default function AccountSetting({
           icon: <CubeOutline className={iconClassName} />,
           activeIcon: <CubeOutline className={iconClassName} />,
         },
-        {
-          key: 'data-source',
-          name: t('common.settings.dataSource'),
-          icon: <Database03 className={iconClassName} />,
-          activeIcon: <Database03Solid className={iconClassName} />,
-        },
-        {
-          key: 'plugin',
-          name: t('common.settings.plugin'),
-          icon: <PuzzlePiece01 className={iconClassName} />,
-          activeIcon: <PuzzlePiece01Solid className={iconClassName} />,
-        },
+        // {
+        //   key: 'data-source',
+        //   name: t('common.settings.dataSource'),
+        //   icon: <Database03 className={iconClassName} />,
+        //   activeIcon: <Database03Solid className={iconClassName} />,
+        // },
+        // {
+        //   key: 'plugin',
+        //   name: t('common.settings.plugin'),
+        //   icon: <PuzzlePiece01 className={iconClassName} />,
+        //   activeIcon: <PuzzlePiece01Solid className={iconClassName} />,
+        // },
       ],
     },
     {
@@ -78,12 +76,12 @@ export default function AccountSetting({
           icon: <User01 className={iconClassName} />,
           activeIcon: <User01Solid className={iconClassName} />,
         },
-        {
-          key: 'integrations',
-          name: t('common.settings.integrations'),
-          icon: <AtSign className={iconClassName} />,
-          activeIcon: <AtSign className={iconClassName} />,
-        },
+        // {
+        //   key: 'integrations',
+        //   name: t('common.settings.integrations'),
+        //   icon: <AtSign className={iconClassName} />,
+        //   activeIcon: <AtSign className={iconClassName} />,
+        // },
         {
           key: 'language',
           name: t('common.settings.language'),

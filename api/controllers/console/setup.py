@@ -102,10 +102,10 @@ class UserRegisterUtils:
                 raise ValueError(str(ex))
 
     def _get_email(self, ):
-        return request.headers.get('Authorization')
+        return request.headers.get('email')
     
     def _get_username(self, ):
-        return request.headers.get('Authorization', '')
+        return request.headers.get('username', '')
 
     def register(self):
         email = self._get_email()

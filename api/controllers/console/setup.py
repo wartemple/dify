@@ -88,7 +88,7 @@ class UserRegisterUtils:
         provider_service = ProviderService()
         engines = [
             {"provider_name": "chatglm", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.17.6.32:7777/api/v1/chatglm/message')}},
-            {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.17.6.32:7777/api/v1/baichuan/message')}}
+            {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.17.6.32:7777/api/v1/baichuan/message')}},
             {"provider_name": "openai", "config": {"openai_api_base": "", "openai_api_key": "test", "openai_organization": ""}},
         ]
         for engine in engines:
@@ -109,6 +109,8 @@ class UserRegisterUtils:
 
     def register(self):
         email = self._get_email()
+        if not email:
+            return
         # 没登录用户 或者传输的header不一致时，进行用户注册或者登录
         if not current_user or current_app.email != email:
             self.login_user()

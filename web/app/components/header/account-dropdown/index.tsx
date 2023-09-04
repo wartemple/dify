@@ -85,11 +85,11 @@ export default function AppSelector() {
                     <WorkplaceSelector />
                   </div>
                   <div className="px-1 py-1">
-                    <Menu.Item>
+                    {/* <Menu.Item>
                       <div className={itemClassName} onClick={() => setSettingVisible(true)}>
                         <div>{t('common.userProfile.settings')}</div>
                       </div>
-                    </Menu.Item>
+                    </Menu.Item> */}
                     {/* <Menu.Item>
                       <Link
                         className={classNames(itemClassName, 'group justify-between')}

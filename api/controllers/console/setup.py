@@ -89,6 +89,7 @@ class UserRegisterUtils:
         engines = [
             {"provider_name": "chatglm", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.17.6.32:7777/api/v1/chatglm/message')}},
             {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.17.6.32:7777/api/v1/baichuan/message')}},
+            {"provider_name": "bobfintech", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.17.6.32:7777/api/v1/chatglm/message')}},
             {"provider_name": "openai", "config": {"openai_api_base": "", "openai_api_key": "test", "openai_organization": ""}},
         ]
         for engine in engines:

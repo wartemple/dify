@@ -29,7 +29,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
 }
 
 export const metadata = {
-  title: 'Dify',
+  title: '大模型应用平台',
 }
 
 export default Layout

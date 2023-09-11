@@ -181,7 +181,7 @@ const translation = {
       openaiHosted: '托管 OpenAI',
       onTrial: '体验',
       exhausted: '超出限额',
-      desc: '托管 OpenAI 由 Dify 提供的托管 OpenAI 服务，你可以使用 GPT-3.5 等模型，在体验额度消耗完毕前你需要设置其它模型供应商。',
+      desc: '托管 OpenAI 由 大模型应用平台 提供的托管 OpenAI 服务，你可以使用 GPT-3.5 等模型，在体验额度消耗完毕前你需要设置其它模型供应商。',
       callTimes: '调用次数',
       usedUp: '试用额度已用完，请在下方添加自己的模型供应商',
       useYourModel: '当前正在使用你自己的模型供应商。',
@@ -290,8 +290,8 @@ const translation = {
   about: {
     changeLog: '更新日志',
     updateNow: '现在更新',
-    nowAvailable: 'Dify {{version}} 现已可用。',
-    latestAvailable: 'Dify {{version}} 已是最新版本。',
+    nowAvailable: '大模型应用平台 {{version}} 现已可用。',
+    latestAvailable: '大模型应用平台 {{version}} 已是最新版本。',
   },
   appMenus: {
     overview: '概览',

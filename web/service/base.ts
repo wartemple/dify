@@ -215,7 +215,9 @@ const baseFetch = (
                   Toast.notify({ type: 'error', message: 'Invalid token' })
                   return bodyJson.then((data: any) => Promise.reject(data))
                 }
-                const loginUrl = `${globalThis.location.origin}/signin`
+                // 二次开发
+                // const loginUrl = `${globalThis.location.origin}/signin`
+                const loginUrl = 'https://ai.bobfintech.com.cn/iam'
                 if (IS_CE_EDITION) {
                   bodyJson.then((data: any) => {
                     if (data.code === 'not_setup') {
@@ -242,7 +244,9 @@ const baseFetch = (
                   bodyJson.then((data: any) => {
                     Toast.notify({ type: 'error', message: data.message })
                     if (data.code === 'already_setup')
-                      globalThis.location.href = `${globalThis.location.origin}/signin`
+                      // 二次开发
+                      // globalThis.location.href = `${globalThis.location.origin}/signin`
+                      globalThis.location.href = 'https://ai.bobfintech.com.cn/iam'
                   })
                 })
                 break

@@ -2,6 +2,11 @@ import Link from 'next/link'
 import Loading from '@/app/components/base/loading'
 
 const Home = async () => {
+  localStorage.setItem('currUrl', window.location.href)
+  const accessToken = localStorage.getItem('loginToken')
+  if (!accessToken) {
+    window.location.href = 'https://ai.bobfintech.com.cn/iam'
+  }
   return (
     <div className="flex flex-col justify-center min-h-screen py-12 sm:px-6 lg:px-8">
 
@@ -16,3 +21,4 @@ const Home = async () => {
 }
 
 export default Home
+ 

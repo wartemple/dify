@@ -32,7 +32,9 @@ export default function AppSelector() {
       url: '/logout',
       params: {},
     })
-    router.push('/signin')
+    // 二次开发
+    // router.push('/signin')
+    window.location.href = 'https://ai.bobfintech.com.cn/iam'
   }
 
   return (

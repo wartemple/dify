@@ -19,7 +19,7 @@ const translation = {
   invitationCodePlaceholder: '输入邀请码',
   interfaceLanguage: '界面语言',
   timezone: '时区',
-  go: '跳转至 Dify',
+  go: '跳转至 大模型应用平台',
   sendUsMail: '发封邮件介绍你自己，我们会尽快处理。',
   acceptPP: '我已阅读并接受隐私政策',
   reset: '请运行以下命令重置密码',
@@ -41,7 +41,7 @@ const translation = {
     passwordInvalid: '密码必须包含字母和数字，且长度不小于8位',
   },
   license: {
-    tip: '启动 Dify 社区版之前, 请阅读 GitHub 上的',
+    tip: '启动 大模型应用平台 社区版之前, 请阅读 GitHub 上的',
     link: '开源协议',
   },
   join: '加入',

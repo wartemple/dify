@@ -162,15 +162,6 @@ const InstallForm = () => {
                 </Button>
               </div>
             </form>
-            <div className="block w-hull mt-2 text-xs text-gray-600">
-              {t('login.license.tip')}
-            &nbsp;
-              <Link
-                className='text-primary-600'
-                target={'_blank'}
-                href={`https://docs.dify.ai/${locale === 'en' ? '' : `v/${locale.toLowerCase()}/`}community/open-source`}
-              >{t('login.license.link')}</Link>
-            </div>
           </div>
         </div>
       </>

@@ -36,7 +36,7 @@ const translation = {
     HR: '人力资源',
   },
   universalChat: {
-    welcome: '开始和 Dify 聊天吧',
+    welcome: '开始和 大模型应用平台 聊天吧',
     welcomeDescribe: '您的 AI 对话伴侣，为您提供个性化的帮助',
     model: '模型',
     plugins: {

@@ -18,7 +18,7 @@ export type ISettingsModalProps = {
   isShow: boolean
   defaultValue?: string
   onClose: () => void
-  onSave?: (params: ConfigParams) => Promise<any>
+  onSave?: (params: ConfigParams) => Promise<void>
 }
 
 export type ConfigParams = {
@@ -26,6 +26,10 @@ export type ConfigParams = {
   description: string
   default_language: string
   prompt_public: boolean
+  copyright: string
+  privacy_policy: string
+  icon: string
+  icon_background: string
 }
 
 const LANGUAGE_MAP: Record<Language, string> = {
@@ -42,7 +46,8 @@ const SettingsModal: FC<ISettingsModalProps> = ({
   onSave,
 }) => {
   const [isShowMore, setIsShowMore] = useState(false)
-  const { title, description, copyright, privacy_policy, default_language, icon, icon_background } = appInfo.site
+  const { icon, icon_background } = appInfo
+  const { title, description, copyright, privacy_policy, default_language } = appInfo.site
   const [inputInfo, setInputInfo] = useState({ title, desc: description, copyright, privacyPolicy: privacy_policy })
   const [language, setLanguage] = useState(default_language)
   const [saveLoading, setSaveLoading] = useState(false)
@@ -82,7 +87,7 @@ const SettingsModal: FC<ISettingsModalProps> = ({
   }
 
   const onChange = (field: string) => {
-    return (e: any) => {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setInputInfo(item => ({ ...item, [field]: e.target.value }))
     }
   }

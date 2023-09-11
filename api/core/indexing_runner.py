@@ -67,14 +67,6 @@ class IndexingRunner:
                     dataset_document=dataset_document,
                     processing_rule=processing_rule
                 )
-                # new_documents = []
-                # for document in documents:
-                #     response = LLMGenerator.generate_qa_document(dataset.tenant_id, document.page_content)
-                #     document_qa_list = self.format_split_text(response)
-                #     for result in document_qa_list:
-                #         document = Document(page_content=result['question'], metadata={'source': result['answer']})
-                #         new_documents.append(document)
-                # build index
                 self._build_index(
                     dataset=dataset,
                     dataset_document=dataset_document,
@@ -225,14 +217,29 @@ class IndexingRunner:
             db.session.commit()
 
     def file_indexing_estimate(self, tenant_id: str, file_details: List[UploadFile], tmp_processing_rule: dict,
-                               doc_form: str = None) -> dict:
+                               doc_form: str = None, doc_language: str = 'English', dataset_id: str = None,
+                               indexing_technique: str = 'economy') -> dict:
         """
         Estimate the indexing for the document.
         """
-        embedding_model = ModelFactory.get_embedding_model(
-            tenant_id=tenant_id
-        )
-
+        embedding_model = None
+        if dataset_id:
+            dataset = Dataset.query.filter_by(
+                id=dataset_id
+            ).first()
+            if not dataset:
+                raise ValueError('Dataset not found.')
+            if dataset.indexing_technique == 'high_quality' or indexing_technique == 'high_quality':
+                embedding_model = ModelFactory.get_embedding_model(
+                    tenant_id=dataset.tenant_id,
+                    model_provider_name=dataset.embedding_model_provider,
+                    model_name=dataset.embedding_model
+                )
+        else:
+            if indexing_technique == 'high_quality':
+                embedding_model = ModelFactory.get_embedding_model(
+                    tenant_id=tenant_id
+                )
         tokens = 0
         preview_texts = []
         total_segments = 0
@@ -260,23 +267,22 @@ class IndexingRunner:
             for document in documents:
                 if len(preview_texts) < 5:
                     preview_texts.append(document.page_content)
-
-                tokens += embedding_model.get_num_tokens(self.filter_string(document.page_content))
-
-        text_generation_model = ModelFactory.get_text_generation_model(
-            tenant_id=tenant_id
-        )
+                if indexing_technique == 'high_quality' or embedding_model:
+                    tokens += embedding_model.get_num_tokens(self.filter_string(document.page_content))
 
         if doc_form and doc_form == 'qa_model':
+            text_generation_model = ModelFactory.get_text_generation_model(
+                tenant_id=tenant_id
+            )
             if len(preview_texts) > 0:
                 # qa model document
-                response = LLMGenerator.generate_qa_document(current_user.current_tenant_id, preview_texts[0])
+                response = LLMGenerator.generate_qa_document(current_user.current_tenant_id, preview_texts[0], doc_language)
                 document_qa_list = self.format_split_text(response)
                 return {
                     "total_segments": total_segments * 20,
                     "tokens": total_segments * 2000,
                     "total_price": '{:f}'.format(
-                        text_generation_model.get_token_price(total_segments * 2000, MessageType.HUMAN)),
+                        text_generation_model.calc_tokens_price(total_segments * 2000, MessageType.HUMAN)),
                     "currency": embedding_model.get_currency(),
                     "qa_preview": document_qa_list,
                     "preview": preview_texts
@@ -284,19 +290,35 @@ class IndexingRunner:
         return {
             "total_segments": total_segments,
             "tokens": tokens,
-            "total_price": '{:f}'.format(embedding_model.get_token_price(tokens)),
-            "currency": embedding_model.get_currency(),
+            "total_price": '{:f}'.format(embedding_model.calc_tokens_price(tokens)) if embedding_model else 0,
+            "currency": embedding_model.get_currency() if embedding_model else 'USD',
             "preview": preview_texts
         }
 
-    def notion_indexing_estimate(self, tenant_id: str, notion_info_list: list, tmp_processing_rule: dict, doc_form: str = None) -> dict:
+    def notion_indexing_estimate(self, tenant_id: str, notion_info_list: list, tmp_processing_rule: dict,
+                                 doc_form: str = None, doc_language: str = 'English', dataset_id: str = None,
+                                 indexing_technique: str = 'economy') -> dict:
         """
         Estimate the indexing for the document.
         """
-        embedding_model = ModelFactory.get_embedding_model(
-            tenant_id=tenant_id
-        )
-
+        embedding_model = None
+        if dataset_id:
+            dataset = Dataset.query.filter_by(
+                id=dataset_id
+            ).first()
+            if not dataset:
+                raise ValueError('Dataset not found.')
+            if dataset.indexing_technique == 'high_quality' or indexing_technique == 'high_quality':
+                embedding_model = ModelFactory.get_embedding_model(
+                    tenant_id=dataset.tenant_id,
+                    model_provider_name=dataset.embedding_model_provider,
+                    model_name=dataset.embedding_model
+                )
+        else:
+            if indexing_technique == 'high_quality':
+                embedding_model = ModelFactory.get_embedding_model(
+                    tenant_id=tenant_id
+                )
         # load data from notion
         tokens = 0
         preview_texts = []
@@ -341,23 +363,22 @@ class IndexingRunner:
                 for document in documents:
                     if len(preview_texts) < 5:
                         preview_texts.append(document.page_content)
-
-                    tokens += embedding_model.get_num_tokens(document.page_content)
-
-        text_generation_model = ModelFactory.get_text_generation_model(
-            tenant_id=tenant_id
-        )
+                    if indexing_technique == 'high_quality' or embedding_model:
+                        tokens += embedding_model.get_num_tokens(document.page_content)
 
         if doc_form and doc_form == 'qa_model':
+            text_generation_model = ModelFactory.get_text_generation_model(
+                tenant_id=tenant_id
+            )
             if len(preview_texts) > 0:
                 # qa model document
-                response = LLMGenerator.generate_qa_document(current_user.current_tenant_id, preview_texts[0])
+                response = LLMGenerator.generate_qa_document(current_user.current_tenant_id, preview_texts[0], doc_language)
                 document_qa_list = self.format_split_text(response)
                 return {
                     "total_segments": total_segments * 20,
                     "tokens": total_segments * 2000,
                     "total_price": '{:f}'.format(
-                        text_generation_model.get_token_price(total_segments * 2000, MessageType.HUMAN)),
+                        text_generation_model.calc_tokens_price(total_segments * 2000, MessageType.HUMAN)),
                     "currency": embedding_model.get_currency(),
                     "qa_preview": document_qa_list,
                     "preview": preview_texts
@@ -365,8 +386,8 @@ class IndexingRunner:
         return {
             "total_segments": total_segments,
             "tokens": tokens,
-            "total_price": '{:f}'.format(embedding_model.get_token_price(tokens)),
-            "currency": embedding_model.get_currency(),
+            "total_price": '{:f}'.format(embedding_model.calc_tokens_price(tokens)) if embedding_model else 0,
+            "currency": embedding_model.get_currency() if embedding_model else 'USD',
             "preview": preview_texts
         }
 
@@ -385,7 +406,8 @@ class IndexingRunner:
                 filter(UploadFile.id == data_source_info['upload_file_id']). \
                 one_or_none()
 
-            text_docs = FileExtractor.load(file_detail)
+            if file_detail:
+                text_docs = FileExtractor.load(file_detail)
         elif dataset_document.data_source_type == 'notion_import':
             loader = NotionLoader.from_document(dataset_document)
             text_docs = loader.load()
@@ -458,7 +480,8 @@ class IndexingRunner:
             splitter=splitter,
             processing_rule=processing_rule,
             tenant_id=dataset.tenant_id,
-            document_form=dataset_document.doc_form
+            document_form=dataset_document.doc_form,
+            document_language=dataset_document.doc_language
         )
 
         # save node to document segment
@@ -494,7 +517,8 @@ class IndexingRunner:
         return documents
 
     def _split_to_documents(self, text_docs: List[Document], splitter: TextSplitter,
-                            processing_rule: DatasetProcessRule, tenant_id: str, document_form: str) -> List[Document]:
+                            processing_rule: DatasetProcessRule, tenant_id: str,
+                            document_form: str, document_language: str) -> List[Document]:
         """
         Split the text documents into nodes.
         """
@@ -509,12 +533,13 @@ class IndexingRunner:
             documents = splitter.split_documents([text_doc])
             split_documents = []
             for document_node in documents:
-                doc_id = str(uuid.uuid4())
-                hash = helper.generate_text_hash(document_node.page_content)
-                document_node.metadata['doc_id'] = doc_id
-                document_node.metadata['doc_hash'] = hash
 
-                split_documents.append(document_node)
+                if document_node.page_content.strip():
+                    doc_id = str(uuid.uuid4())
+                    hash = helper.generate_text_hash(document_node.page_content)
+                    document_node.metadata['doc_id'] = doc_id
+                    document_node.metadata['doc_hash'] = hash
+                    split_documents.append(document_node)
             all_documents.extend(split_documents)
         # processing qa document
         if document_form == 'qa_model':
@@ -523,8 +548,9 @@ class IndexingRunner:
                 sub_documents = all_documents[i:i + 10]
                 for doc in sub_documents:
                     document_format_thread = threading.Thread(target=self.format_qa_document, kwargs={
-                        'flask_app': current_app._get_current_object(), 'tenant_id': tenant_id, 'document_node': doc,
-                        'all_qa_documents': all_qa_documents})
+                        'flask_app': current_app._get_current_object(),
+                        'tenant_id': tenant_id, 'document_node': doc, 'all_qa_documents': all_qa_documents,
+                        'document_language': document_language})
                     threads.append(document_format_thread)
                     document_format_thread.start()
                 for thread in threads:
@@ -532,14 +558,14 @@ class IndexingRunner:
             return all_qa_documents
         return all_documents
 
-    def format_qa_document(self, flask_app: Flask, tenant_id: str, document_node, all_qa_documents):
+    def format_qa_document(self, flask_app: Flask, tenant_id: str, document_node, all_qa_documents, document_language):
         format_documents = []
         if document_node.page_content is None or not document_node.page_content.strip():
             return
         with flask_app.app_context():
             try:
                 # qa model document
-                response = LLMGenerator.generate_qa_document(tenant_id, document_node.page_content)
+                response = LLMGenerator.generate_qa_document(tenant_id, document_node.page_content, document_language)
                 document_qa_list = self.format_split_text(response)
                 qa_documents = []
                 for result in document_qa_list:
@@ -639,10 +665,13 @@ class IndexingRunner:
         """
         vector_index = IndexBuilder.get_index(dataset, 'high_quality')
         keyword_table_index = IndexBuilder.get_index(dataset, 'economy')
-
-        embedding_model = ModelFactory.get_embedding_model(
-            tenant_id=dataset.tenant_id
-        )
+        embedding_model = None
+        if dataset.indexing_technique == 'high_quality':
+            embedding_model = ModelFactory.get_embedding_model(
+                tenant_id=dataset.tenant_id,
+                model_provider_name=dataset.embedding_model_provider,
+                model_name=dataset.embedding_model
+            )
 
         # chunk nodes by chunk size
         indexing_start_at = time.perf_counter()
@@ -652,11 +681,11 @@ class IndexingRunner:
             # check document is paused
             self._check_document_paused_status(dataset_document.id)
             chunk_documents = documents[i:i + chunk_size]
-
-            tokens += sum(
-                embedding_model.get_num_tokens(document.page_content)
-                for document in chunk_documents
-            )
+            if dataset.indexing_technique == 'high_quality' or embedding_model:
+                tokens += sum(
+                    embedding_model.get_num_tokens(document.page_content)
+                    for document in chunk_documents
+                )
 
             # save vector index
             if vector_index:
@@ -672,6 +701,7 @@ class IndexingRunner:
                 DocumentSegment.status == "indexing"
             ).update({
                 DocumentSegment.status: "completed",
+                DocumentSegment.enabled: True,
                 DocumentSegment.completed_at: datetime.datetime.utcnow()
             })
 
@@ -721,6 +751,32 @@ class IndexingRunner:
         """
         DocumentSegment.query.filter_by(document_id=dataset_document_id).update(update_params)
         db.session.commit()
+
+    def batch_add_segments(self, segments: List[DocumentSegment], dataset: Dataset):
+        """
+        Batch add segments index processing
+        """
+        documents = []
+        for segment in segments:
+            document = Document(
+                page_content=segment.content,
+                metadata={
+                    "doc_id": segment.index_node_id,
+                    "doc_hash": segment.index_node_hash,
+                    "document_id": segment.document_id,
+                    "dataset_id": segment.dataset_id,
+                }
+            )
+            documents.append(document)
+        # save vector index
+        index = IndexBuilder.get_index(dataset, 'high_quality')
+        if index:
+            index.add_texts(documents, duplicate_check=True)
+
+        # save keyword index
+        index = IndexBuilder.get_index(dataset, 'economy')
+        if index:
+            index.add_texts(documents)
 
 
 class DocumentIsPausedException(Exception):

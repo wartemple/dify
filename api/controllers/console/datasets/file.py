@@ -8,7 +8,8 @@ from pathlib import Path
 
 from cachetools import TTLCache
 from flask import request, current_app
-from flask_login import login_required, current_user
+from flask_login import current_user
+from core.login.login import login_required
 from flask_restful import Resource, marshal_with, fields
 from werkzeug.exceptions import NotFound
 
@@ -25,12 +26,28 @@ from models.model import UploadFile
 
 cache = TTLCache(maxsize=None, ttl=30)
 
-FILE_SIZE_LIMIT = 15 * 1024 * 1024  # 15MB
-ALLOWED_EXTENSIONS = ['txt', 'markdown', 'md', 'pdf', 'html', 'htm', 'xlsx']
+ALLOWED_EXTENSIONS = ['txt', 'markdown', 'md', 'pdf', 'html', 'htm', 'xlsx', 'docx', 'csv']
 PREVIEW_WORDS_LIMIT = 3000
 
 
 class FileApi(Resource):
+    upload_config_fields = {
+        'file_size_limit': fields.Integer,
+        'batch_count_limit': fields.Integer
+    }
+
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @marshal_with(upload_config_fields)
+    def get(self):
+        file_size_limit = current_app.config.get("UPLOAD_FILE_SIZE_LIMIT")
+        batch_count_limit = current_app.config.get("UPLOAD_FILE_BATCH_LIMIT")
+        return {
+            'file_size_limit': file_size_limit,
+            'batch_count_limit': batch_count_limit
+        }, 200
+
     file_fields = {
         'id': fields.String,
         'name': fields.String,
@@ -60,12 +77,13 @@ class FileApi(Resource):
         file_content = file.read()
         file_size = len(file_content)
 
-        if file_size > FILE_SIZE_LIMIT:
-            message = "({file_size} > {FILE_SIZE_LIMIT})"
+        file_size_limit = current_app.config.get("UPLOAD_FILE_SIZE_LIMIT") * 1024 * 1024
+        if file_size > file_size_limit:
+            message = "({file_size} > {file_size_limit})"
             raise FileTooLargeError(message)
 
         extension = file.filename.split('.')[-1]
-        if extension not in ALLOWED_EXTENSIONS:
+        if extension.lower() not in ALLOWED_EXTENSIONS:
             raise UnsupportedFileTypeError()
 
         # user uuid as file name
@@ -118,7 +136,7 @@ class FilePreviewApi(Resource):
 
         # extract text from file
         extension = upload_file.extension
-        if extension not in ALLOWED_EXTENSIONS:
+        if extension.lower() not in ALLOWED_EXTENSIONS:
             raise UnsupportedFileTypeError()
 
         text = FileExtractor.load(upload_file, return_text=True)

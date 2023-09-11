@@ -60,9 +60,6 @@ class ChatGLMModel(BaseLLM):
         # tokenize the text using the GPT-2 tokenizer
         return max(len(tokenizer.encode(prompts)), 0)
 
-    def get_token_price(self, tokens: int, message_type: MessageType):
-        return decimal.Decimal('0')
-
     def get_currency(self):
         return 'RMB'
 
@@ -77,7 +74,3 @@ class ChatGLMModel(BaseLLM):
             return LLMBadRequestError(f"ChatGLM: {str(ex)}")
         else:
             return ex
-
-    @classmethod
-    def support_streaming(cls):
-        return False

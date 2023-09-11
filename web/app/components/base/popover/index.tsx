@@ -2,13 +2,19 @@ import { Popover, Transition } from '@headlessui/react'
 import { Fragment, cloneElement, useRef } from 'react'
 import s from './style.module.css'
 
+export type HtmlContentProps = {
+  onClose?: () => void
+  onClick?: () => void
+}
+
 type IPopover = {
   className?: string
-  htmlContent: React.ReactNode
+  htmlContent: React.ReactElement<HtmlContentProps>
   trigger?: 'click' | 'hover'
   position?: 'bottom' | 'br'
   btnElement?: string | React.ReactNode
   btnClassName?: string | ((open: boolean) => string)
+  manualClose?: boolean
 }
 
 const timeoutDuration = 100
@@ -20,6 +26,7 @@ export default function CustomPopover({
   btnElement,
   className,
   btnClassName,
+  manualClose,
 }: IPopover) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const timeOutRef = useRef<NodeJS.Timeout | null>(null)
@@ -62,17 +69,14 @@ export default function CustomPopover({
               </Popover.Button>
               <Transition as={Fragment}>
                 <Popover.Panel
-                  className={`${s.popupPanel} ${
-                    position === 'br'
-                      ? 'right-0'
-                      : 'transform -translate-x-1/2 left-1/2'
-                  } ${className}`}
+                  className={`${s.popupPanel} ${position === 'br' ? 'right-0' : 'translate-x-1/2 left-1/2'} ${className}`}
                   {...(trigger !== 'hover'
                     ? {}
                     : {
                       onMouseLeave: () => onMouseLeave(open),
                       onMouseEnter: () => onMouseEnter(open),
-                    })}
+                    })
+                  }
                 >
                   {({ close }) => (
                     <div
@@ -82,10 +86,16 @@ export default function CustomPopover({
                         : {
                           onMouseLeave: () => onMouseLeave(open),
                           onMouseEnter: () => onMouseEnter(open),
-                        })}
+                        })
+                      }
                     >
-                      {cloneElement(htmlContent as React.ReactElement, {
-                        onClose: () => close(),
+                      {cloneElement(htmlContent as React.ReactElement<HtmlContentProps>, {
+                        onClose: () => onMouseLeave(open),
+                        ...(manualClose
+                          ? {
+                            onClick: close,
+                          }
+                          : {}),
                       })}
                     </div>
                   )}

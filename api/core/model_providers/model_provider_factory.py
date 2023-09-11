@@ -63,6 +63,15 @@ class ModelProviderFactory:
         elif provider_name == 'huggingface_hub':
             from core.model_providers.providers.huggingface_hub_provider import HuggingfaceHubProvider
             return HuggingfaceHubProvider
+        elif provider_name == 'xinference':
+            from core.model_providers.providers.xinference_provider import XinferenceProvider
+            return XinferenceProvider
+        elif provider_name == 'openllm':
+            from core.model_providers.providers.openllm_provider import OpenLLMProvider
+            return OpenLLMProvider
+        elif provider_name == 'localai':
+            from core.model_providers.providers.localai_provider import LocalAIProvider
+            return LocalAIProvider
         else:
             raise NotImplementedError
 

@@ -15,6 +15,7 @@ import ModelIcon from '@/app/components/app/configuration/config-model/model-ico
 import ModelName, { supportI18nModelName } from '@/app/components/app/configuration/config-model/model-name'
 import ProviderName from '@/app/components/app/configuration/config-model/provider-name'
 import { useProviderContext } from '@/context/provider-context'
+
 type Props = {
   value: {
     providerName: ProviderEnum
@@ -26,6 +27,16 @@ type Props = {
   popClassName?: string
   readonly?: boolean
   triggerIconSmall?: boolean
+}
+
+type ModelOption = {
+  type: 'model'
+  value: string
+  providerName: ProviderEnum
+  modelDisplayName: string
+} | {
+  type: 'provider'
+  value: ProviderEnum
 }
 
 const ModelSelector: FC<Props> = ({
@@ -47,6 +58,7 @@ const ModelSelector: FC<Props> = ({
       [ModelType.embeddings]: embeddingsModelList,
       [ModelType.speech2text]: speech2textModelList,
     })[modelType]
+  const currModel = modelList.find(item => item.model_name === value?.modelName && item.model_provider.provider_name === value.providerName)
   const allModelNames = (() => {
     if (!search)
       return {}
@@ -66,22 +78,23 @@ const ModelSelector: FC<Props> = ({
     })
     : modelList
 
-  const hasRemoved = value && !modelList.find(({ model_name }) => model_name === value.modelName)
+  const hasRemoved = value && !modelList.find(({ model_name, model_provider }) => model_name === value.modelName && model_provider.provider_name === value.providerName)
 
-  const modelOptions: any[] = (() => {
+  const modelOptions: ModelOption[] = (() => {
     const providers = _.uniq(filteredModelList.map(item => item.model_provider.provider_name))
-    const res: any[] = []
+    const res: ModelOption[] = []
     providers.forEach((providerName) => {
       res.push({
         type: 'provider',
         value: providerName,
       })
       const models = filteredModelList.filter(m => m.model_provider.provider_name === providerName)
-      models.forEach(({ model_name }) => {
+      models.forEach(({ model_name, model_display_name }) => {
         res.push({
           type: 'model',
           providerName,
           value: model_name,
+          modelDisplayName: model_display_name,
         })
       })
     })
@@ -104,7 +117,7 @@ const ModelSelector: FC<Props> = ({
                           modelId={value.modelName}
                           providerName={value.providerName}
                         />
-                        <div className='mr-1.5 grow text-left text-sm text-gray-900 truncate'><ModelName modelId={value.modelName} /></div>
+                        <div className='mr-1.5 grow text-left text-sm text-gray-900 truncate'><ModelName modelId={value.modelName} modelDisplayName={currModel?.model_display_name} /></div>
                       </>
                     )
                     : (
@@ -160,7 +173,7 @@ const ModelSelector: FC<Props> = ({
                 </div>
               </div>
               {
-                modelOptions.map((model: any) => {
+                modelOptions.map((model) => {
                   if (model.type === 'provider') {
                     return (
                       <div
@@ -193,7 +206,7 @@ const ModelSelector: FC<Props> = ({
                           modelId={model.value}
                           providerName={model.providerName}
                         />
-                        <div className='grow text-left text-sm text-gray-900 truncate'><ModelName modelId={model.value} /></div>
+                        <div className='grow text-left text-sm text-gray-900 truncate'><ModelName modelId={model.value} modelDisplayName={model.modelDisplayName} /></div>
                         { (value?.providerName === model.providerName && value?.modelName === model.value) && <Check className='shrink-0 w-4 h-4 text-primary-600' /> }
                       </Popover.Button>
                     )

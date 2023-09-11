@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 from flask import request
-from flask_login import login_required, current_user
+from flask_login import current_user
+from core.login.login import login_required
 from flask_restful import Resource, reqparse, fields, marshal, marshal_with
 from werkzeug.exceptions import NotFound, Forbidden
 import services
@@ -10,13 +11,15 @@ from controllers.console.datasets.error import DatasetNameDuplicateError
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
 from core.indexing_runner import IndexingRunner
-from core.model_providers.error import LLMBadRequestError
+from core.model_providers.error import LLMBadRequestError, ProviderTokenNotInitError
 from core.model_providers.model_factory import ModelFactory
+from core.model_providers.models.entity.model_params import ModelType
 from libs.helper import TimestampField
 from extensions.ext_database import db
 from models.dataset import DocumentSegment, Document
 from models.model import UploadFile
 from services.dataset_service import DatasetService, DocumentService
+from services.provider_service import ProviderService
 
 dataset_detail_fields = {
     'id': fields.String,
@@ -33,6 +36,9 @@ dataset_detail_fields = {
     'created_at': TimestampField,
     'updated_by': fields.String,
     'updated_at': TimestampField,
+    'embedding_model': fields.String,
+    'embedding_model_provider': fields.String,
+    'embedding_available': fields.Boolean
 }
 
 dataset_query_detail_fields = {
@@ -74,8 +80,28 @@ class DatasetListApi(Resource):
             datasets, total = DatasetService.get_datasets(page, limit, provider,
                                                           current_user.current_tenant_id, current_user)
 
+        # check embedding setting
+        provider_service = ProviderService()
+        valid_model_list = provider_service.get_valid_model_list(current_user.current_tenant_id, ModelType.EMBEDDINGS.value)
+        # if len(valid_model_list) == 0:
+        #     raise ProviderNotInitializeError(
+        #         f"No Embedding Model available. Please configure a valid provider "
+        #         f"in the Settings -> Model Provider.")
+        model_names = []
+        for valid_model in valid_model_list:
+            model_names.append(f"{valid_model['model_name']}:{valid_model['model_provider']['provider_name']}")
+        data = marshal(datasets, dataset_detail_fields)
+        for item in data:
+            if item['indexing_technique'] == 'high_quality':
+                item_model = f"{item['embedding_model']}:{item['embedding_model_provider']}"
+                if item_model in model_names:
+                    item['embedding_available'] = True
+                else:
+                    item['embedding_available'] = False
+            else:
+                item['embedding_available'] = True
         response = {
-            'data': marshal(datasets, dataset_detail_fields),
+            'data': data,
             'has_more': len(datasets) == limit,
             'limit': limit,
             'total': total,
@@ -101,15 +127,6 @@ class DatasetListApi(Resource):
             raise Forbidden()
 
         try:
-            ModelFactory.get_embedding_model(
-                tenant_id=current_user.current_tenant_id
-            )
-        except LLMBadRequestError:
-            raise ProviderNotInitializeError(
-                f"No Embedding Model available. Please configure a valid provider "
-                f"in the Settings -> Model Provider.")
-
-        try:
             dataset = DatasetService.create_empty_dataset(
                 tenant_id=current_user.current_tenant_id,
                 name=args['name'],
@@ -131,20 +148,39 @@ class DatasetApi(Resource):
         dataset = DatasetService.get_dataset(dataset_id_str)
         if dataset is None:
             raise NotFound("Dataset not found.")
-
         try:
             DatasetService.check_dataset_permission(
                 dataset, current_user)
         except services.errors.account.NoPermissionError as e:
             raise Forbidden(str(e))
-
-        return marshal(dataset, dataset_detail_fields), 200
+        data = marshal(dataset, dataset_detail_fields)
+        # check embedding setting
+        provider_service = ProviderService()
+        # get valid model list
+        valid_model_list = provider_service.get_valid_model_list(current_user.current_tenant_id, ModelType.EMBEDDINGS.value)
+        model_names = []
+        for valid_model in valid_model_list:
+            model_names.append(f"{valid_model['model_name']}:{valid_model['model_provider']['provider_name']}")
+        if data['indexing_technique'] == 'high_quality':
+            item_model = f"{data['embedding_model']}:{data['embedding_model_provider']}"
+            if item_model in model_names:
+                data['embedding_available'] = True
+            else:
+                data['embedding_available'] = False
+        else:
+            data['embedding_available'] = True
+        return data, 200
 
     @setup_required
     @login_required
     @account_initialization_required
     def patch(self, dataset_id):
         dataset_id_str = str(dataset_id)
+        dataset = DatasetService.get_dataset(dataset_id_str)
+        if dataset is None:
+            raise NotFound("Dataset not found.")
+        # check user's model setting
+        DatasetService.check_dataset_model_setting(dataset)
 
         parser = reqparse.RequestParser()
         parser.add_argument('name', nullable=False,
@@ -232,7 +268,10 @@ class DatasetIndexingEstimateApi(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('info_list', type=dict, required=True, nullable=True, location='json')
         parser.add_argument('process_rule', type=dict, required=True, nullable=True, location='json')
+        parser.add_argument('indexing_technique', type=str, required=True, nullable=True, location='json')
         parser.add_argument('doc_form', type=str, default='text_model', required=False, nullable=False, location='json')
+        parser.add_argument('dataset_id', type=str, required=False, nullable=False, location='json')
+        parser.add_argument('doc_language', type=str, default='English', required=False, nullable=False, location='json')
         args = parser.parse_args()
         # validate args
         DocumentService.estimate_args_validate(args)
@@ -250,11 +289,15 @@ class DatasetIndexingEstimateApi(Resource):
 
             try:
                 response = indexing_runner.file_indexing_estimate(current_user.current_tenant_id, file_details,
-                                                                  args['process_rule'], args['doc_form'])
+                                                                  args['process_rule'], args['doc_form'],
+                                                                  args['doc_language'], args['dataset_id'],
+                                                                  args['indexing_technique'])
             except LLMBadRequestError:
                 raise ProviderNotInitializeError(
                     f"No Embedding Model available. Please configure a valid provider "
                     f"in the Settings -> Model Provider.")
+            except ProviderTokenNotInitError as ex:
+                raise ProviderNotInitializeError(ex.description)
         elif args['info_list']['data_source_type'] == 'notion_import':
 
             indexing_runner = IndexingRunner()
@@ -262,11 +305,15 @@ class DatasetIndexingEstimateApi(Resource):
             try:
                 response = indexing_runner.notion_indexing_estimate(current_user.current_tenant_id,
                                                                     args['info_list']['notion_info_list'],
-                                                                    args['process_rule'], args['doc_form'])
+                                                                    args['process_rule'], args['doc_form'],
+                                                                    args['doc_language'], args['dataset_id'],
+                                                                    args['indexing_technique'])
             except LLMBadRequestError:
                 raise ProviderNotInitializeError(
                     f"No Embedding Model available. Please configure a valid provider "
                     f"in the Settings -> Model Provider.")
+            except ProviderTokenNotInitError as ex:
+                raise ProviderNotInitializeError(ex.description)
         else:
             raise ValueError('Data source type not support')
         return response, 200

@@ -1,7 +1,7 @@
 /* eslint-disable no-new, prefer-promise-reject-errors */
 import { API_PREFIX, IS_CE_EDITION, PUBLIC_API_PREFIX } from '@/config'
 import Toast from '@/app/components/base/toast'
-import type { ThoughtItem } from '@/app/components/app/chat/type'
+import type { MessageEnd, ThoughtItem } from '@/app/components/app/chat/type'
 
 const TIME_OUT = 100000
 
@@ -28,12 +28,14 @@ export type IOnDataMoreInfo = {
   taskId?: string
   messageId: string
   errorMessage?: string
+  errorCode?: string
 }
 
 export type IOnData = (message: string, isFirstMessage: boolean, moreInfo: IOnDataMoreInfo) => void
 export type IOnThought = (though: ThoughtItem) => void
+export type IOnMessageEnd = (messageEnd: MessageEnd) => void
 export type IOnCompleted = (hasError?: boolean) => void
-export type IOnError = (msg: string) => void
+export type IOnError = (msg: string, code?: string) => void
 
 type IOtherOptions = {
   isPublicAPI?: boolean
@@ -42,6 +44,7 @@ type IOtherOptions = {
   deleteContentType?: boolean
   onData?: IOnData // for stream
   onThought?: IOnThought
+  onMessageEnd?: IOnMessageEnd
   onError?: IOnError
   onCompleted?: IOnCompleted // for stream
   getAbortController?: (abortController: AbortController) => void
@@ -64,7 +67,7 @@ export function format(text: string) {
   return res.replaceAll('\n', '<br/>').replaceAll('```', '')
 }
 
-const handleStream = (response: any, onData: IOnData, onCompleted?: IOnCompleted, onThought?: IOnThought) => {
+const handleStream = (response: any, onData: IOnData, onCompleted?: IOnCompleted, onThought?: IOnThought, onMessageEnd?: IOnMessageEnd) => {
   if (!response.ok)
     throw new Error('Network response was not ok')
 
@@ -85,7 +88,6 @@ const handleStream = (response: any, onData: IOnData, onCompleted?: IOnCompleted
       try {
         lines.forEach((message) => {
           if (message.startsWith('data: ')) { // check if it starts with data:
-            // console.log(message);
             try {
               bufferObj = JSON.parse(message.substring(6)) // remove data: and parse as json
             }
@@ -102,6 +104,7 @@ const handleStream = (response: any, onData: IOnData, onCompleted?: IOnCompleted
                 conversationId: undefined,
                 messageId: '',
                 errorMessage: bufferObj.message,
+                errorCode: bufferObj.code,
               })
               hasError = true
               onCompleted && onCompleted(true)
@@ -118,6 +121,9 @@ const handleStream = (response: any, onData: IOnData, onCompleted?: IOnCompleted
             }
             else if (bufferObj.event === 'agent_thought') {
               onThought?.(bufferObj as any)
+            }
+            else if (bufferObj.event === 'message_end') {
+              onMessageEnd?.(bufferObj as any)
             }
           }
         })
@@ -313,7 +319,7 @@ export const upload = (options: any): Promise<any> => {
   })
 }
 
-export const ssePost = (url: string, fetchOptions: any, { isPublicAPI = false, onData, onCompleted, onThought, onError, getAbortController }: IOtherOptions) => {
+export const ssePost = (url: string, fetchOptions: any, { isPublicAPI = false, onData, onCompleted, onThought, onMessageEnd, onError, getAbortController }: IOtherOptions) => {
   const abortController = new AbortController()
 
   const options = Object.assign({}, baseOptions, {
@@ -349,13 +355,13 @@ export const ssePost = (url: string, fetchOptions: any, { isPublicAPI = false, o
       return handleStream(res, (str: string, isFirstMessage: boolean, moreInfo: IOnDataMoreInfo) => {
         if (moreInfo.errorMessage) {
           // debugger
-          onError?.(moreInfo.errorMessage)
+          onError?.(moreInfo.errorMessage, moreInfo.errorCode)
           if (moreInfo.errorMessage !== 'AbortError: The user aborted a request.')
             Toast.notify({ type: 'error', message: moreInfo.errorMessage })
           return
         }
         onData?.(str, isFirstMessage, moreInfo)
-      }, onCompleted, onThought)
+      }, onCompleted, onThought, onMessageEnd)
     }).catch((e) => {
       if (e.toString() !== 'AbortError: The user aborted a request.')
         Toast.notify({ type: 'error', message: e })

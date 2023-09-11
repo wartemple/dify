@@ -8,7 +8,7 @@ import TextGenerationRes from '@/app/components/app/text-generate/item'
 import NoData from '@/app/components/share/text-generation/no-data'
 import Toast from '@/app/components/base/toast'
 import { sendCompletionMessage, updateFeedback } from '@/service/share'
-import type { Feedbacktype } from '@/app/components/app/chat'
+import type { Feedbacktype } from '@/app/components/app/chat/type'
 import Loading from '@/app/components/base/loading'
 import type { PromptConfig } from '@/models/debug'
 import type { InstalledApp } from '@/models/explore'
@@ -21,7 +21,6 @@ export type IResultProps = {
   promptConfig: PromptConfig | null
   moreLikeThisEnabled: boolean
   inputs: Record<string, any>
-  query: string
   controlSend?: number
   controlStopResponding?: number
   onShowRes: () => void
@@ -39,7 +38,6 @@ const Result: FC<IResultProps> = ({
   promptConfig,
   moreLikeThisEnabled,
   inputs,
-  query,
   controlSend,
   controlStopResponding,
   onShowRes,
@@ -109,14 +107,8 @@ const Result: FC<IResultProps> = ({
     if (!checkCanSend())
       return
 
-    if (!query) {
-      logError(t('appDebug.errorMessage.queryRequired'))
-      return false
-    }
-
     const data = {
       inputs,
-      query,
     }
 
     setMessageId(null)
@@ -133,7 +125,7 @@ const Result: FC<IResultProps> = ({
 
     setResponsingTrue()
     sendCompletionMessage(data, {
-      onData: (data: string, _isFirstMessage: boolean, { messageId }: any) => {
+      onData: (data: string, _isFirstMessage: boolean, { messageId }) => {
         tempMessageId = messageId
         res.push(data)
         setCompletionRes(res.join(''))

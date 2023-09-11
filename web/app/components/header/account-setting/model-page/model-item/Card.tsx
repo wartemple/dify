@@ -8,8 +8,8 @@ import Button from '@/app/components/base/button'
 
 type CardProps = {
   providerType: ProviderEnum
-  models: any[]
-  onOpenModal: (v: any) => void
+  models: Model[]
+  onOpenModal: (v: Omit<Model, 'config'> & Model['config']) => void
   onOperate: (v: Record<string, any>) => void
 }
 
@@ -33,7 +33,7 @@ const Card: FC<CardProps> = ({
   return (
     <div className='px-3 pb-3'>
       {
-        models.map((model: Model) => (
+        models.map(model => (
           <div key={`${model.model_name}-${model.model_type}`} className='flex mb-1 px-3 py-2 bg-white rounded-lg shadow-xs last:mb-0'>
             <div className='grow'>
               <div className='flex items-center mb-0.5 h-[18px] text-[13px] font-medium text-gray-700'>

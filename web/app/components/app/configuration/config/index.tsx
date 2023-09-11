@@ -36,9 +36,11 @@ const Config: FC = () => {
     setSuggestedQuestionsAfterAnswerConfig,
     speechToTextConfig,
     setSpeechToTextConfig,
+    citationConfig,
+    setCitationConfig,
   } = useContext(ConfigContext)
   const isChatApp = mode === AppType.chat
-  const { currentProvider } = useProviderContext()
+  const { speech2textDefaultModel } = useProviderContext()
 
   const promptTemplate = modelConfig.configs.prompt_template
   const promptVariables = modelConfig.configs.prompt_variables
@@ -88,9 +90,15 @@ const Config: FC = () => {
         draft.enabled = value
       }))
     },
+    citation: citationConfig.enabled,
+    setCitation: (value) => {
+      setCitationConfig(produce(citationConfig, (draft) => {
+        draft.enabled = value
+      }))
+    },
   })
 
-  const hasChatConfig = isChatApp && (featureConfig.openingStatement || featureConfig.suggestedQuestionsAfterAnswer || (featureConfig.speechToText && currentProvider?.provider_name === 'openai'))
+  const hasChatConfig = isChatApp && (featureConfig.openingStatement || featureConfig.suggestedQuestionsAfterAnswer || (featureConfig.speechToText && !!speech2textDefaultModel) || featureConfig.citation)
   const hasToolbox = false
 
   const [showAutomatic, { setTrue: showAutomaticTrue, setFalse: showAutomaticFalse }] = useBoolean(false)
@@ -120,7 +128,7 @@ const Config: FC = () => {
             isChatApp={isChatApp}
             config={featureConfig}
             onChange={handleFeatureChange}
-            showSpeechToTextItem={currentProvider?.provider_name === 'openai'}
+            showSpeechToTextItem={!!speech2textDefaultModel}
           />
         )}
         {showAutomatic && (
@@ -160,7 +168,8 @@ const Config: FC = () => {
                 }
               }
               isShowSuggestedQuestionsAfterAnswer={featureConfig.suggestedQuestionsAfterAnswer}
-              isShowSpeechText={featureConfig.speechToText && currentProvider?.provider_name === 'openai'}
+              isShowSpeechText={featureConfig.speechToText && !!speech2textDefaultModel}
+              isShowCitation={featureConfig.citation}
             />
           )
         }

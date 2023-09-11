@@ -1,8 +1,9 @@
+import json
 import logging
 
 from langchain.schema import OutputParserException
 
-from core.model_providers.error import LLMError
+from core.model_providers.error import LLMError, ProviderTokenNotInitError
 from core.model_providers.model_factory import ModelFactory
 from core.model_providers.models.entity.message import PromptMessage, MessageType
 from core.model_providers.models.entity.model_params import ModelKwargs
@@ -22,18 +23,25 @@ class LLMGenerator:
         if len(query) > 2000:
             query = query[:300] + "...[TRUNCATED]..." + query[-300:]
 
-        prompt = prompt.format(query=query)
+        query = query.replace("\n", " ")
+
+        prompt += query + "\n"
 
         model_instance = ModelFactory.get_text_generation_model(
             tenant_id=tenant_id,
             model_kwargs=ModelKwargs(
-                max_tokens=50
+                temperature=1,
+                max_tokens=100
             )
         )
 
         prompts = [PromptMessage(content=prompt)]
         response = model_instance.run(prompts)
         answer = response.content
+
+        result_dict = json.loads(answer)
+        answer = result_dict['Your Output']
+
         return answer.strip()
 
     @classmethod
@@ -51,6 +59,7 @@ class LLMGenerator:
         prompt_with_empty_context = prompt.format(context='')
         prompt_tokens = model_instance.get_num_tokens([PromptMessage(content=prompt_with_empty_context)])
         max_context_token_length = model_instance.model_rules.max_tokens.max
+        max_context_token_length = max_context_token_length if max_context_token_length else 1500
         rest_tokens = max_context_token_length - prompt_tokens - max_tokens - 1
 
         context = ''
@@ -108,13 +117,16 @@ class LLMGenerator:
 
         _input = prompt.format_prompt(histories=histories)
 
-        model_instance = ModelFactory.get_text_generation_model(
-            tenant_id=tenant_id,
-            model_kwargs=ModelKwargs(
-                max_tokens=256,
-                temperature=0
+        try:
+            model_instance = ModelFactory.get_text_generation_model(
+                tenant_id=tenant_id,
+                model_kwargs=ModelKwargs(
+                    max_tokens=256,
+                    temperature=0
+                )
             )
-        )
+        except ProviderTokenNotInitError:
+            return []
 
         prompts = [PromptMessage(content=_input.to_string())]
 
@@ -175,8 +187,8 @@ class LLMGenerator:
         return rule_config
 
     @classmethod
-    def generate_qa_document(cls, tenant_id: str, query):
-        prompt = GENERATOR_QA_PROMPT
+    def generate_qa_document(cls, tenant_id: str, query, document_language: str):
+        prompt = GENERATOR_QA_PROMPT.format(language=document_language)
 
         model_instance = ModelFactory.get_text_generation_model(
             tenant_id=tenant_id,

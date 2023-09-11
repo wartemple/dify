@@ -24,6 +24,7 @@ import type { DataSet } from '@/models/datasets'
 export type IChatProps = {
   configElem?: React.ReactNode
   chatList: IChatItem[]
+  controlChatUpdateAllConversation?: number
   /**
    * Whether to display the editing area and rating status
    */
@@ -47,14 +48,17 @@ export type IChatProps = {
   isShowSuggestion?: boolean
   suggestionList?: string[]
   isShowSpeechToText?: boolean
+  isShowCitation?: boolean
   answerIconClassName?: string
   isShowConfigElem?: boolean
   dataSets?: DataSet[]
+  isShowCitationHitInfo?: boolean
 }
 
 const Chat: FC<IChatProps> = ({
   configElem,
   chatList,
+
   feedbackDisabled = false,
   isHideFeedbackEdit = false,
   isHideSendInput = false,
@@ -72,16 +76,18 @@ const Chat: FC<IChatProps> = ({
   isShowSuggestion,
   suggestionList,
   isShowSpeechToText,
+  isShowCitation,
   answerIconClassName,
   isShowConfigElem,
   dataSets,
+  isShowCitationHitInfo,
 }) => {
   const { t } = useTranslation()
   const { notify } = useContext(ToastContext)
   const isUseInputMethod = useRef(false)
 
   const [query, setQuery] = React.useState('')
-  const handleContentChange = (e: any) => {
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setQuery(value)
   }
@@ -111,7 +117,7 @@ const Chat: FC<IChatProps> = ({
       setQuery('')
   }
 
-  const handleKeyUp = (e: any) => {
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.code === 'Enter') {
       e.preventDefault()
       // prevent send message when using input method enter
@@ -120,7 +126,7 @@ const Chat: FC<IChatProps> = ({
     }
   }
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     isUseInputMethod.current = e.nativeEvent.isComposing
     if (e.code === 'Enter' && !e.shiftKey) {
       setQuery(query.replace(/\n$/, ''))
@@ -160,6 +166,7 @@ const Chat: FC<IChatProps> = ({
           if (item.isAnswer) {
             const isLast = item.id === chatList[chatList.length - 1].id
             const thoughts = item.agent_thoughts?.filter(item => item.thought !== '[DONE]')
+            const citation = item.citation
             const isThinking = !item.content && item.agent_thoughts && item.agent_thoughts?.length > 0 && !item.agent_thoughts.some(item => item.thought === '[DONE]')
             return <Answer
               key={item.id}
@@ -172,8 +179,11 @@ const Chat: FC<IChatProps> = ({
               isResponsing={isResponsing && isLast}
               answerIconClassName={answerIconClassName}
               thoughts={thoughts}
+              citation={citation}
               isThinking={isThinking}
               dataSets={dataSets}
+              isShowCitation={isShowCitation}
+              isShowCitationHitInfo={isShowCitationHitInfo}
             />
           }
           return <Question key={item.id} id={item.id} content={item.content} more={item.more} useCurrentUserAvatar={useCurrentUserAvatar} />

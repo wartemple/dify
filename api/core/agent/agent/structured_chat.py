@@ -52,7 +52,7 @@ Action:
 class AutoSummarizingStructuredChatAgent(StructuredChatAgent, CalcTokenMixin):
     moving_summary_buffer: str = ""
     moving_summary_index: int = 0
-    summary_llm: BaseLanguageModel
+    summary_llm: BaseLanguageModel = None
     model_instance: BaseLLM
 
     class Config:
@@ -106,13 +106,19 @@ class AutoSummarizingStructuredChatAgent(StructuredChatAgent, CalcTokenMixin):
             raise new_exception
 
         try:
-            return self.output_parser.parse(full_output)
+            agent_decision = self.output_parser.parse(full_output)
+            if isinstance(agent_decision, AgentAction) and agent_decision.tool == 'dataset':
+                tool_inputs = agent_decision.tool_input
+                if isinstance(tool_inputs, dict) and 'query' in tool_inputs:
+                    tool_inputs['query'] = kwargs['input']
+                    agent_decision.tool_input = tool_inputs
+            return agent_decision
         except OutputParserException:
             return AgentFinish({"output": "I'm sorry, the answer of model is invalid, "
                                           "I don't know how to respond to that."}, "")
 
     def summarize_messages(self, intermediate_steps: List[Tuple[AgentAction, str]], **kwargs):
-        if len(intermediate_steps) >= 2:
+        if len(intermediate_steps) >= 2 and self.summary_llm:
             should_summary_intermediate_steps = intermediate_steps[self.moving_summary_index:-1]
             should_summary_messages = [AIMessage(content=observation)
                                        for _, observation in should_summary_intermediate_steps]

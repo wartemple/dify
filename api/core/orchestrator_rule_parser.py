@@ -14,14 +14,16 @@ from core.callback_handler.main_chain_gather_callback_handler import MainChainGa
 from core.callback_handler.std_out_callback_handler import DifyStdOutCallbackHandler
 from core.chain.sensitive_word_avoidance_chain import SensitiveWordAvoidanceChain
 from core.conversation_message_task import ConversationMessageTask
+from core.model_providers.error import ProviderTokenNotInitError
 from core.model_providers.model_factory import ModelFactory
 from core.model_providers.models.entity.model_params import ModelKwargs, ModelMode
+from core.model_providers.models.llm.base import BaseLLM
+from core.tool.current_datetime_tool import DatetimeTool
 from core.tool.dataset_retriever_tool import DatasetRetrieverTool
 from core.tool.provider.serpapi_provider import SerpAPIToolProvider
 from core.tool.serpapi_wrapper import OptimizedSerpAPIWrapper, OptimizedSerpAPIInput
 from core.tool.web_reader_tool import WebReaderTool
 from extensions.ext_database import db
-from libs import helper
 from models.dataset import Dataset, DatasetProcessRule
 from models.model import AppModelConfig
 
@@ -34,8 +36,8 @@ class OrchestratorRuleParser:
         self.app_model_config = app_model_config
 
     def to_agent_executor(self, conversation_message_task: ConversationMessageTask, memory: Optional[BaseChatMemory],
-                          rest_tokens: int, chain_callback: MainChainGatherCallbackHandler) \
-            -> Optional[AgentExecutor]:
+                          rest_tokens: int, chain_callback: MainChainGatherCallbackHandler,
+                          return_resource: bool = False, retriever_from: str = 'dev') -> Optional[AgentExecutor]:
         if not self.app_model_config.agent_mode_dict:
             return None
 
@@ -72,25 +74,34 @@ class OrchestratorRuleParser:
 
             # only OpenAI chat model (include Azure) support function call, use ReACT instead
             if agent_model_instance.model_mode != ModelMode.CHAT \
-                         or agent_model_instance.model_provider.provider_name not in ['openai', 'azure_openai']:
+                    or agent_model_instance.model_provider.provider_name not in ['openai', 'azure_openai']:
                 if planning_strategy in [PlanningStrategy.FUNCTION_CALL, PlanningStrategy.MULTI_FUNCTION_CALL]:
                     planning_strategy = PlanningStrategy.REACT
                 elif planning_strategy == PlanningStrategy.ROUTER:
                     planning_strategy = PlanningStrategy.REACT_ROUTER
 
-            summary_model_instance = ModelFactory.get_text_generation_model(
-                tenant_id=self.tenant_id,
-                model_kwargs=ModelKwargs(
-                    temperature=0,
-                    max_tokens=500
+            try:
+                summary_model_instance = ModelFactory.get_text_generation_model(
+                    tenant_id=self.tenant_id,
+                    model_provider_name=agent_provider_name,
+                    model_name=agent_model_name,
+                    model_kwargs=ModelKwargs(
+                        temperature=0,
+                        max_tokens=500
+                    ),
+                    deduct_quota=False
                 )
-            )
+            except ProviderTokenNotInitError as e:
+                summary_model_instance = None
 
             tools = self.to_tools(
+                agent_model_instance=agent_model_instance,
                 tool_configs=tool_configs,
                 conversation_message_task=conversation_message_task,
                 rest_tokens=rest_tokens,
-                callbacks=[agent_callback, DifyStdOutCallbackHandler()]
+                callbacks=[agent_callback, DifyStdOutCallbackHandler()],
+                return_resource=return_resource,
+                retriever_from=retriever_from
             )
 
             if len(tools) == 0:
@@ -136,15 +147,20 @@ class OrchestratorRuleParser:
 
         return None
 
-    def to_tools(self, tool_configs: list, conversation_message_task: ConversationMessageTask,
-                 rest_tokens: int, callbacks: Callbacks = None) -> list[BaseTool]:
+    def to_tools(self, agent_model_instance: BaseLLM, tool_configs: list,
+                 conversation_message_task: ConversationMessageTask,
+                 rest_tokens: int, callbacks: Callbacks = None, return_resource: bool = False,
+                 retriever_from: str = 'dev') -> list[BaseTool]:
         """
         Convert app agent tool configs to tools
 
+        :param agent_model_instance:
         :param rest_tokens:
         :param tool_configs: app agent tool configs
         :param conversation_message_task:
         :param callbacks:
+        :param return_resource:
+        :param retriever_from:
         :return:
         """
         tools = []
@@ -156,9 +172,9 @@ class OrchestratorRuleParser:
 
             tool = None
             if tool_type == "dataset":
-                tool = self.to_dataset_retriever_tool(tool_val, conversation_message_task, rest_tokens)
+                tool = self.to_dataset_retriever_tool(tool_val, conversation_message_task, rest_tokens, return_resource, retriever_from)
             elif tool_type == "web_reader":
-                tool = self.to_web_reader_tool()
+                tool = self.to_web_reader_tool(agent_model_instance)
             elif tool_type == "google_search":
                 tool = self.to_google_search_tool()
             elif tool_type == "wikipedia":
@@ -173,13 +189,15 @@ class OrchestratorRuleParser:
         return tools
 
     def to_dataset_retriever_tool(self, tool_config: dict, conversation_message_task: ConversationMessageTask,
-                                  rest_tokens: int) \
+                                  rest_tokens: int, return_resource: bool = False, retriever_from: str = 'dev') \
             -> Optional[BaseTool]:
         """
         A dataset tool is a tool that can be used to retrieve information from a dataset
         :param rest_tokens:
         :param tool_config:
         :param conversation_message_task:
+        :param return_resource:
+        :param retriever_from:
         :return:
         """
         # get dataset from dataset id
@@ -198,29 +216,36 @@ class OrchestratorRuleParser:
         tool = DatasetRetrieverTool.from_dataset(
             dataset=dataset,
             k=k,
-            callbacks=[DatasetToolCallbackHandler(conversation_message_task)]
+            callbacks=[DatasetToolCallbackHandler(conversation_message_task)],
+            conversation_message_task=conversation_message_task,
+            return_resource=return_resource,
+            retriever_from=retriever_from
         )
 
         return tool
 
-    def to_web_reader_tool(self) -> Optional[BaseTool]:
+    def to_web_reader_tool(self, agent_model_instance: BaseLLM) -> Optional[BaseTool]:
         """
         A tool for reading web pages
 
         :return:
         """
-        summary_model_instance = ModelFactory.get_text_generation_model(
-            tenant_id=self.tenant_id,
-            model_kwargs=ModelKwargs(
-                temperature=0,
-                max_tokens=500
+        try:
+            summary_model_instance = ModelFactory.get_text_generation_model(
+                tenant_id=self.tenant_id,
+                model_provider_name=agent_model_instance.model_provider.provider_name,
+                model_name=agent_model_instance.name,
+                model_kwargs=ModelKwargs(
+                    temperature=0,
+                    max_tokens=500
+                ),
+                deduct_quota=False
             )
-        )
-
-        summary_llm = summary_model_instance.client
+        except ProviderTokenNotInitError:
+            summary_model_instance = None
 
         tool = WebReaderTool(
-            llm=summary_llm,
+            llm=summary_model_instance.client if summary_model_instance else None,
             max_chunk_length=4000,
             continue_reading=True,
             callbacks=[DifyStdOutCallbackHandler()]
@@ -248,11 +273,7 @@ class OrchestratorRuleParser:
         return tool
 
     def to_current_datetime_tool(self) -> Optional[BaseTool]:
-        tool = Tool(
-            name="current_datetime",
-            description="A tool when you want to get the current date, time, week, month or year, "
-                        "and the time zone is UTC. Result is \"<date> <time> <timezone> <week>\".",
-            func=helper.get_current_datetime,
+        tool = DatetimeTool(
             callbacks=[DifyStdOutCallbackHandler()]
         )
 
@@ -273,6 +294,7 @@ class OrchestratorRuleParser:
     def _dynamic_calc_retrieve_k(cls, dataset: Dataset, rest_tokens: int) -> int:
         DEFAULT_K = 2
         CONTEXT_TOKENS_PERCENT = 0.3
+        MAX_K = 10
 
         if rest_tokens == -1:
             return DEFAULT_K
@@ -301,5 +323,5 @@ class OrchestratorRuleParser:
         if context_limit_tokens <= segment_max_tokens * DEFAULT_K:
             return DEFAULT_K
 
-        # Expand the k value when there's still some room left in the 30% rest tokens space
-        return context_limit_tokens // segment_max_tokens
+        # Expand the k value when there's still some room left in the 30% rest tokens space, but less than the MAX_K
+        return min(context_limit_tokens // segment_max_tokens, MAX_K)

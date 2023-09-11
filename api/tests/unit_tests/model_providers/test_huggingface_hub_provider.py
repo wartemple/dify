@@ -17,7 +17,8 @@ HOSTED_INFERENCE_API_VALIDATE_CREDENTIAL = {
 INFERENCE_ENDPOINTS_VALIDATE_CREDENTIAL = {
     'huggingfacehub_api_type': 'inference_endpoints',
     'huggingfacehub_api_token': 'valid_key',
-    'huggingfacehub_endpoint_url': 'valid_url'
+    'huggingfacehub_endpoint_url': 'valid_url',
+    'task_type': 'text-generation'
 }
 
 def encrypt_side_effect(tenant_id, encrypt_key):
@@ -30,8 +31,9 @@ def decrypt_side_effect(tenant_id, encrypted_key):
 
 @patch('huggingface_hub.hf_api.ModelInfo')
 def test_hosted_inference_api_is_credentials_valid_or_raise_valid(mock_model_info, mocker):
-    mock_model_info.return_value = MagicMock(pipeline_tag='text2text-generation')
-    mocker.patch('langchain.llms.huggingface_hub.HuggingFaceHub._call', return_value="abc")
+    mock_model_info.return_value = MagicMock(pipeline_tag='text2text-generation', cardData={'inference': True})
+    mocker.patch('huggingface_hub.hf_api.HfApi.whoami', return_value="abc")
+    mocker.patch('huggingface_hub.hf_api.HfApi.model_info', return_value=mock_model_info.return_value)
 
     MODEL_PROVIDER_CLASS.is_model_credentials_valid_or_raise(
         model_name='test_model_name',
@@ -61,7 +63,7 @@ def test_hosted_inference_api_is_credentials_valid_or_raise_invalid(mock_model_i
 
 def test_inference_endpoints_is_credentials_valid_or_raise_valid(mocker):
     mocker.patch('huggingface_hub.hf_api.HfApi.whoami', return_value=None)
-    mocker.patch('langchain.llms.huggingface_endpoint.HuggingFaceEndpoint._call', return_value="abc")
+    mocker.patch('core.third_party.langchain.llms.huggingface_endpoint_llm.HuggingFaceEndpointLLM._call', return_value="abc")
 
     MODEL_PROVIDER_CLASS.is_model_credentials_valid_or_raise(
         model_name='test_model_name',
@@ -69,8 +71,10 @@ def test_inference_endpoints_is_credentials_valid_or_raise_valid(mocker):
         credentials=INFERENCE_ENDPOINTS_VALIDATE_CREDENTIAL
     )
 
+
 def test_inference_endpoints_is_credentials_valid_or_raise_invalid(mocker):
     mocker.patch('huggingface_hub.hf_api.HfApi.whoami', return_value=None)
+    mocker.patch('core.third_party.langchain.llms.huggingface_endpoint_llm.HuggingFaceEndpointLLM._call', return_value="abc")
 
     with pytest.raises(CredentialsValidateFailedError):
         MODEL_PROVIDER_CLASS.is_model_credentials_valid_or_raise(

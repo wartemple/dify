@@ -1,4 +1,5 @@
 import json
+from json import JSONDecodeError
 
 from flask import current_app, request
 from flask_login import UserMixin
@@ -90,6 +91,7 @@ class AppModelConfig(db.Model):
     pre_prompt = db.Column(db.Text)
     agent_mode = db.Column(db.Text)
     sensitive_word_avoidance = db.Column(db.Text)
+    retriever_resource = db.Column(db.Text)
 
     @property
     def app(self):
@@ -108,10 +110,15 @@ class AppModelConfig(db.Model):
     def suggested_questions_after_answer_dict(self) -> dict:
         return json.loads(self.suggested_questions_after_answer) if self.suggested_questions_after_answer \
             else {"enabled": False}
-    
+
     @property
     def speech_to_text_dict(self) -> dict:
         return json.loads(self.speech_to_text) if self.speech_to_text \
+            else {"enabled": False}
+
+    @property
+    def retriever_resource_dict(self) -> dict:
+        return json.loads(self.retriever_resource) if self.retriever_resource \
             else {"enabled": False}
 
     @property
@@ -140,6 +147,7 @@ class AppModelConfig(db.Model):
             "suggested_questions": self.suggested_questions_list,
             "suggested_questions_after_answer": self.suggested_questions_after_answer_dict,
             "speech_to_text": self.speech_to_text_dict,
+            "retriever_resource": self.retriever_resource,
             "more_like_this": self.more_like_this_dict,
             "sensitive_word_avoidance": self.sensitive_word_avoidance_dict,
             "model": self.model_dict,
@@ -147,6 +155,48 @@ class AppModelConfig(db.Model):
             "pre_prompt": self.pre_prompt,
             "agent_mode": self.agent_mode_dict
         }
+
+    def from_model_config_dict(self, model_config: dict):
+        self.provider = ""
+        self.model_id = ""
+        self.configs = {}
+        self.opening_statement = model_config['opening_statement']
+        self.suggested_questions = json.dumps(model_config['suggested_questions'])
+        self.suggested_questions_after_answer = json.dumps(model_config['suggested_questions_after_answer'])
+        self.speech_to_text = json.dumps(model_config['speech_to_text']) \
+            if model_config.get('speech_to_text') else None
+        self.more_like_this = json.dumps(model_config['more_like_this'])
+        self.sensitive_word_avoidance = json.dumps(model_config['sensitive_word_avoidance']) \
+            if model_config.get('sensitive_word_avoidance') else None
+        self.model = json.dumps(model_config['model'])
+        self.user_input_form = json.dumps(model_config['user_input_form'])
+        self.pre_prompt = model_config['pre_prompt']
+        self.agent_mode = json.dumps(model_config['agent_mode'])
+        self.retriever_resource = json.dumps(model_config['retriever_resource']) \
+            if model_config.get('retriever_resource') else None
+        return self
+
+    def copy(self):
+        new_app_model_config = AppModelConfig(
+            id=self.id,
+            app_id=self.app_id,
+            provider="",
+            model_id="",
+            configs={},
+            opening_statement=self.opening_statement,
+            suggested_questions=self.suggested_questions,
+            suggested_questions_after_answer=self.suggested_questions_after_answer,
+            speech_to_text=self.speech_to_text,
+            more_like_this=self.more_like_this,
+            sensitive_word_avoidance=self.sensitive_word_avoidance,
+            model=self.model,
+            user_input_form=self.user_input_form,
+            pre_prompt=self.pre_prompt,
+            agent_mode=self.agent_mode
+        )
+
+        return new_app_model_config
+
 
 class RecommendedApp(db.Model):
     __tablename__ = 'recommended_apps'
@@ -234,7 +284,8 @@ class Conversation(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text('CURRENT_TIMESTAMP(0)'))
 
     messages = db.relationship("Message", backref="conversation", lazy='select', passive_deletes="all")
-    message_annotations = db.relationship("MessageAnnotation", backref="conversation", lazy='select', passive_deletes="all")
+    message_annotations = db.relationship("MessageAnnotation", backref="conversation", lazy='select',
+                                          passive_deletes="all")
 
     is_deleted = db.Column(db.Boolean, nullable=False, server_default=db.text('false'))
 
@@ -276,6 +327,7 @@ class Conversation(db.Model):
             model_config['suggested_questions'] = app_model_config.suggested_questions_list
             model_config['suggested_questions_after_answer'] = app_model_config.suggested_questions_after_answer_dict
             model_config['speech_to_text'] = app_model_config.speech_to_text_dict
+            model_config['retriever_resource'] = app_model_config.retriever_resource_dict
             model_config['more_like_this'] = app_model_config.more_like_this_dict
             model_config['sensitive_word_avoidance'] = app_model_config.sensitive_word_avoidance_dict
             model_config['user_input_form'] = app_model_config.user_input_form_list
@@ -379,9 +431,11 @@ class Message(db.Model):
     message = db.Column(db.JSON, nullable=False)
     message_tokens = db.Column(db.Integer, nullable=False, server_default=db.text('0'))
     message_unit_price = db.Column(db.Numeric(10, 4), nullable=False)
+    message_price_unit = db.Column(db.Numeric(10, 7), nullable=False, server_default=db.text('0.001'))
     answer = db.Column(db.Text, nullable=False)
     answer_tokens = db.Column(db.Integer, nullable=False, server_default=db.text('0'))
     answer_unit_price = db.Column(db.Numeric(10, 4), nullable=False)
+    answer_price_unit = db.Column(db.Numeric(10, 7), nullable=False, server_default=db.text('0.001'))
     provider_response_latency = db.Column(db.Float, nullable=False, server_default=db.text('0'))
     total_price = db.Column(db.Numeric(10, 7))
     currency = db.Column(db.String(255), nullable=False)
@@ -429,8 +483,13 @@ class Message(db.Model):
 
     @property
     def agent_thoughts(self):
-        return db.session.query(MessageAgentThought).filter(MessageAgentThought.message_id == self.id)\
+        return db.session.query(MessageAgentThought).filter(MessageAgentThought.message_id == self.id) \
             .order_by(MessageAgentThought.position.asc()).all()
+
+    @property
+    def retriever_resources(self):
+        return db.session.query(DatasetRetrieverResource).filter(DatasetRetrieverResource.message_id == self.id) \
+            .order_by(DatasetRetrieverResource.position.asc()).all()
 
 
 class MessageFeedback(db.Model):
@@ -557,7 +616,8 @@ class Site(db.Model):
 
     @property
     def app_base_url(self):
-        return (current_app.config['APP_WEB_URL'] if current_app.config['APP_WEB_URL'] else request.host_url.rstrip('/'))
+        return (
+            current_app.config['APP_WEB_URL'] if current_app.config['APP_WEB_URL'] else request.host_url.rstrip('/'))
 
 
 class ApiToken(db.Model):
@@ -662,9 +722,11 @@ class MessageAgentThought(db.Model):
     message = db.Column(db.Text, nullable=True)
     message_token = db.Column(db.Integer, nullable=True)
     message_unit_price = db.Column(db.Numeric, nullable=True)
+    message_price_unit = db.Column(db.Numeric(10, 7), nullable=False, server_default=db.text('0.001'))
     answer = db.Column(db.Text, nullable=True)
     answer_token = db.Column(db.Integer, nullable=True)
     answer_unit_price = db.Column(db.Numeric, nullable=True)
+    answer_price_unit = db.Column(db.Numeric(10, 7), nullable=False, server_default=db.text('0.001'))
     tokens = db.Column(db.Integer, nullable=True)
     total_price = db.Column(db.Numeric, nullable=True)
     currency = db.Column(db.String, nullable=True)
@@ -672,3 +734,31 @@ class MessageAgentThought(db.Model):
     created_by_role = db.Column(db.String, nullable=False)
     created_by = db.Column(UUID, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
+
+
+class DatasetRetrieverResource(db.Model):
+    __tablename__ = 'dataset_retriever_resources'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('id', name='dataset_retriever_resource_pkey'),
+        db.Index('dataset_retriever_resource_message_id_idx', 'message_id'),
+    )
+
+    id = db.Column(UUID, nullable=False, server_default=db.text('uuid_generate_v4()'))
+    message_id = db.Column(UUID, nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    dataset_id = db.Column(UUID, nullable=False)
+    dataset_name = db.Column(db.Text, nullable=False)
+    document_id = db.Column(UUID, nullable=False)
+    document_name = db.Column(db.Text, nullable=False)
+    data_source_type = db.Column(db.Text, nullable=False)
+    segment_id = db.Column(UUID, nullable=False)
+    score = db.Column(db.Float, nullable=True)
+    content = db.Column(db.Text, nullable=False)
+    hit_count = db.Column(db.Integer, nullable=True)
+    word_count = db.Column(db.Integer, nullable=True)
+    segment_position = db.Column(db.Integer, nullable=True)
+    index_node_hash = db.Column(db.Text, nullable=True)
+    retriever_from = db.Column(db.Text, nullable=False)
+    created_by = db.Column(UUID, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
+

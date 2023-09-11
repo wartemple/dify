@@ -10,5 +10,8 @@
   "replicate",
   "huggingface_hub",
   "baichuan",
-  "bobfintech"
+  "bobfintech",
+  "xinference",
+  "openllm",
+  "localai"
 ]

@@ -12,7 +12,7 @@ export type IRadioProps = {
   checked?: boolean
   value?: string | number
   disabled?: boolean
-  onChange?: (e: any) => void
+  onChange?: (e?: IRadioProps['value']) => void
 }
 
 export default function Radio({
@@ -26,7 +26,7 @@ export default function Radio({
 }: IRadioProps): JSX.Element {
   const groupContext = useContext(RadioGroupContext)
   const labelId = useId()
-  const handleChange = (e: any) => {
+  const handleChange = (e: IRadioProps['value']) => {
     if (disabled)
       return
 

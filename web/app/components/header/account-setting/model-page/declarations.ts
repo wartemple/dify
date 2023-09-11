@@ -39,6 +39,9 @@ export enum ProviderEnum {
   'spark' = 'spark',
   'minimax' = 'minimax',
   'chatglm' = 'chatglm',
+  'xinference' = 'xinference',
+  'openllm' = 'openllm',
+  'localai' = 'localai',
 }
 
 export type ProviderConfigItem = {
@@ -70,6 +73,7 @@ export enum ModelFeature {
 // backend defined model struct: /console/api/workspaces/current/models/model-type/:model_type
 export type BackendModel = {
   model_name: string
+  model_display_name: string // not always exist
   model_type: ModelType
   model_provider: {
     provider_name: ProviderEnum
@@ -88,6 +92,7 @@ export type ProviderConfigModal = {
   icon: ReactElement
   defaultValue?: FormValue
   validateKeys?: string[] | ((v?: FormValue) => string[])
+  filterValue?: (v?: FormValue) => FormValue
   fields: Field[]
   link: {
     href: string

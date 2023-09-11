@@ -111,7 +111,7 @@ class UserRegisterUtils:
     def register(self):
         email = self._get_email()
         if not email:
-            return
+            raise ValueError('no header email')
         # 没登录用户 或者传输的header不一致时，进行用户注册或者登录
         if not current_user or current_app.email != email:
             self.login_user()

@@ -1,20 +1,11 @@
-FROM node:18.17.0-alpine
+# base image
+FROM node:18.17.0-alpine AS base
 
 # install packages
 FROM base as packages
 LABEL maintainer="takatost@gmail.com"
 
-ENV NODE_ENV=production
-ENV EDITION SELF_HOSTED
-ENV DEPLOY_ENV PRODUCTION
-ENV CONSOLE_API_URL http://127.0.0.1:5001/prompt-api
-ENV APP_API_URL http://127.0.0.1:5001/prompt-api
-
-
-# install packages
-FROM base as packages
-LABEL maintainer="takatost@gmail.com"
-
+WORKDIR /app/web
 
 COPY package.json .
 COPY yarn.lock .
@@ -37,8 +28,8 @@ FROM base as production
 ENV NODE_ENV production
 ENV EDITION SELF_HOSTED
 ENV DEPLOY_ENV PRODUCTION
-ENV CONSOLE_API_URL http://127.0.0.1:5001/prompt-api
-ENV APP_API_URL http://127.0.0.1:5001/prompt-api
+ENV CONSOLE_API_URL http://127.0.0.1:5001
+ENV APP_API_URL http://127.0.0.1:5001
 ENV PORT 3000
 
 

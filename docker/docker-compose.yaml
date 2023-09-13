@@ -120,7 +120,8 @@ services:
     volumes:
       # Mount the storage directory to the container, for storing user files.
       - ./volumes/app/storage:/app/api/storage
-
+    ports:
+      - "5001:5001"
   # worker service
   # The Celery worker for processing the queue.
   worker:
@@ -176,7 +177,7 @@ services:
 
   # Frontend web application.
   web:
-    image: langgenius/dify-web:0.3.22
+    image: llm-web:0.3.22.2
     restart: always
     environment:
       EDITION: SELF_HOSTED

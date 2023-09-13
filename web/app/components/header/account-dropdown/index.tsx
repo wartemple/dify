@@ -33,8 +33,9 @@ export default function AppSelector() {
       params: {},
     })
     // 二次开发
+    localStorage.setItem('currUrl', window.location.href)
     // router.push('/signin')
-    window.location.href = 'https://ai.bobfintech.com.cn/iam'
+    window.location.href = 'https://ai.bobfintech.com.cn/iam/login'
   }
 
   return (

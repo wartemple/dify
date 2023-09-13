@@ -13,7 +13,7 @@ from libs.helper import email, str_len
 from libs.password import valid_password
 
 from . import api
-from .error import AlreadySetupError, NotSetupError
+from .error import AlreadySetupError, NotSetupError, AccountNotLinkTenantError
 from .wraps import only_edition_self_hosted
 
 
@@ -111,7 +111,7 @@ class UserRegisterUtils:
     def register(self):
         email = self._get_email()
         if not email:
-            raise ValueError('no header email')
+            raise AccountNotLinkTenantError()
         # 没登录用户 或者传输的header不一致时，进行用户注册或者登录
         if not current_user or current_app.email != email:
             self.login_user()

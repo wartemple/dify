@@ -8,7 +8,7 @@ import { i18n } from './i18n'
 export const getLocale = (request: NextRequest): Locale => {
   // @ts-expect-error locales are readonly
   const locales: Locale[] = i18n.locales
-
+  
   let languages: string[] | undefined
   // get locale from cookie
   const localeCookie = request.cookies.get('locale')

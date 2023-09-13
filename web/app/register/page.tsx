@@ -4,6 +4,7 @@ import Forms from './forms'
 import style from './page.module.css'
 
 const Register_ = () => {
+  
   return (
     <>
       <div className={cn(

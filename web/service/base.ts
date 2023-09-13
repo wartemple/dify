@@ -223,7 +223,7 @@ const baseFetch = (
                 }
                 // 二次开发
                 // const loginUrl = `${globalThis.location.origin}/signin`
-                const loginUrl = 'https://ai.bobfintech.com.cn/iam'
+                const loginUrl = 'https://ai.bobfintech.com.cn/iam/login'
                 if (IS_CE_EDITION) {
                   bodyJson.then((data: any) => {
                     if (data.code === 'not_setup') {
@@ -251,8 +251,9 @@ const baseFetch = (
                     Toast.notify({ type: 'error', message: data.message })
                     if (data.code === 'already_setup')
                       // 二次开发
-                      // globalThis.location.href = `${globalThis.location.origin}/signin`
-                      globalThis.location.href = 'https://ai.bobfintech.com.cn/iam'
+                      localStorage.setItem('currUrl', window.location.href)
+                      globalThis.location.href = `${globalThis.location.origin}/signin`
+                      // globalThis.location.href = 'https://ai.bobfintech.com.cn/iam/login'
                   })
                 })
                 break

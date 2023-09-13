@@ -1,9 +1,25 @@
+"use client"
+
 import React from 'react'
 import cn from 'classnames'
 import Forms from './forms'
 import style from './page.module.css'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
 
 const SignIn = () => {
+  const [currUrl, setCurrUrl] = useState("")
+  useEffect(() => {
+    const currUrl = location.href
+    setCurrUrl(currUrl)
+    localStorage.setItem('currUrl', currUrl)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      let loginToken = localStorage.getItem('loginToken');
+      if (!loginToken) {
+        location.href = "https://ai.bobfintech.com.cn/iam/login"
+      }
+    }
+  }, []);
   return (
     <>
       <div className={cn(

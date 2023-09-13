@@ -1,5 +1,5 @@
 import json
-
+# 发布探索app的数据
 from models.model import AppModelConfig, App
 
 model_templates = {

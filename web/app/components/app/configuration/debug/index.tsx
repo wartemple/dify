@@ -409,6 +409,7 @@ const Debug: FC<IDebug> = ({
         {mode === AppType.completion && (
           <div className="mt-6">
             <GroupName name={t('appDebug.result')} />
+            {/* {提示词编排结果：生成多个} */}
             {(completionRes || isResponsing) && (
               <TextGeneration
                 className="mt-2"

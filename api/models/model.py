@@ -762,3 +762,14 @@ class DatasetRetrieverResource(db.Model):
     created_by = db.Column(UUID, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
 
+
+class AppPromptCases(db.Model):
+    __tablename__ = 'app_prompt_cases'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('id', name='app_prompt_cases_pkey'),
+        db.Index('app_model_configs_id_id_idx', 'app_model_configs_id'),
+    )
+    id = db.Column(UUID, nullable=False, server_default=db.text('uuid_generate_v4()'))
+    app_model_configs_id = db.Column(UUID, nullable=False)
+    dataset_name = db.Column(db.Text, nullable=False)
+    is_like = db.Column(db.Boolean, nullable=False)

@@ -38,6 +38,12 @@ model_config_fields = {
     'agent_mode': fields.Raw(attribute='agent_mode_dict'),
 }
 
+prompt_case_fields = {
+    "id": fields.String,
+    "prompt_content": fields.String,
+    "is_like": fields.Boolean,
+}
+
 app_detail_fields = {
     'id': fields.String,
     'name': fields.String,
@@ -81,7 +87,7 @@ class AppListApi(Resource):
         'enable_api': fields.Boolean,
         'is_demo': fields.Boolean,
         'model_config': fields.Nested(model_config_partial_fields, attribute='app_model_config'),
-        'created_at': TimestampField
+        'created_at': TimestampField,
     }
 
     app_pagination_fields = {
@@ -296,7 +302,8 @@ class AppApi(Resource):
         'model_config': fields.Nested(model_config_fields, attribute='app_model_config'),
         'site': fields.Nested(site_fields),
         'api_base_url': fields.String,
-        'created_at': TimestampField
+        'created_at': TimestampField,
+        'prompts': fields.Nested(prompt_case_fields, attribute='prompts')
     }
 
     @setup_required

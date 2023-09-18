@@ -11,11 +11,9 @@ from services.account_service import AccountService, TenantService, RegisterServ
 
 from libs.helper import email, str_len
 from libs.password import valid_password
-
 from . import api
 from .error import AlreadySetupError, NotSetupError, AccountNotLinkTenantError
 from .wraps import only_edition_self_hosted
-
 
 class SetupApi(Resource):
 
@@ -110,10 +108,10 @@ class UserRegisterUtils:
 
     def register(self):
         email = self._get_email()
-        if not email:
+        if current_app.config['UNIFIED_LOGIN_SWITCH'] and not email:
             raise AccountNotLinkTenantError()
         # 没登录用户 或者传输的header不一致时，进行用户注册或者登录
-        if not current_user or current_app.email != email:
+        if not current_user or (hasattr(current_app, 'email') and current_app.email != email):
             self.login_user()
 
     def login_user(self, ):
@@ -140,8 +138,8 @@ def setup_required(view):
     @wraps(view)
     def decorated(*args, **kwargs):
         # SECOND
-        register_utils = UserRegisterUtils()
-        register_utils.register()
+        # register_utils = UserRegisterUtils()
+        # register_utils.register()
         # check setup
         if not get_setup_status():
             raise NotSetupError()

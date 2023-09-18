@@ -112,6 +112,7 @@ class Config:
         # You can generate a strong key using `openssl rand -base64 42`.
         # Alternatively you can set it with `SECRET_KEY` environment variable.
         self.SECRET_KEY = get_env('SECRET_KEY')
+        self.UNIFIED_LOGIN_SWITCH = get_bool_env('UNIFIED_LOGIN_SWITCH')
 
         # cookie settings
         self.REMEMBER_COOKIE_HTTPONLY = get_bool_env('COOKIE_HTTPONLY')

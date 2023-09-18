@@ -46,6 +46,11 @@ class App(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=db.text('CURRENT_TIMESTAMP(0)'))
 
     @property
+    def prompts(self):
+        prompts = db.session.query(AppPromptCases).filter(AppPromptCases.app_id == self.id)
+        return prompts
+
+    @property
     def site(self):
         site = db.session.query(Site).filter(Site.app_id == self.id).first()
         return site
@@ -767,9 +772,19 @@ class AppPromptCases(db.Model):
     __tablename__ = 'app_prompt_cases'
     __table_args__ = (
         db.PrimaryKeyConstraint('id', name='app_prompt_cases_pkey'),
-        db.Index('app_model_configs_id_id_idx', 'app_model_configs_id'),
+        db.Index('app_id_idx', 'app_id'),
     )
     id = db.Column(UUID, nullable=False, server_default=db.text('uuid_generate_v4()'))
-    app_model_configs_id = db.Column(UUID, nullable=False)
-    dataset_name = db.Column(db.Text, nullable=False)
+    app_id = db.Column(UUID, nullable=False)
+    prompt_content = db.Column(db.Text, nullable=False)
     is_like = db.Column(db.Boolean, nullable=False)
+
+    def load_prompt_to_model_config(self):
+        """加载提示词到 模型配置中 
+        """
+        old_like_prompt = db.session.query(AppPromptCases).filter(AppPromptCases.is_like == True).first()
+        old_like_prompt.is_like = False
+        self.is_like = True
+        app_model_config = db.session.query(AppModelConfig).filter(AppModelConfig.app_id == self.app_id).first()
+        app_model_config.pre_prompt = self.prompt_content
+        db.session.commit()

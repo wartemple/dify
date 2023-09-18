@@ -222,8 +222,10 @@ const baseFetch = (
                   return bodyJson.then((data: any) => Promise.reject(data))
                 }
                 // 二次开发
-                // const loginUrl = `${globalThis.location.origin}/signin`
-                const loginUrl = 'https://ai.bobfintech.com.cn/iam/login'
+                const loginUrl = `${globalThis.location.origin}/signin`
+                // if (process.env.UNIFIED_LOGIN_SWITCH !== 'false') {
+                //   loginUrl = 'https://ai.bobfintech.com.cn/iam/login'
+                // }
                 if (IS_CE_EDITION) {
                   bodyJson.then((data: any) => {
                     if (data.code === 'not_setup') {
@@ -252,8 +254,12 @@ const baseFetch = (
                     if (data.code === 'already_setup')
                       // 二次开发
                       localStorage.setItem('currUrl', window.location.href)
+                      // if (process.env.UNIFIED_LOGIN_SWITCH !== 'false') {
+                      //   globalThis.location.href = 'https://ai.bobfintech.com.cn/iam/login'
+                      // } else {
+                      //   globalThis.location.href = `${globalThis.location.origin}/signin`
+                      // }
                       globalThis.location.href = `${globalThis.location.origin}/signin`
-                      // globalThis.location.href = 'https://ai.bobfintech.com.cn/iam/login'
                   })
                 })
                 break

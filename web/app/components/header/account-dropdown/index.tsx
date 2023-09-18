@@ -34,8 +34,10 @@ export default function AppSelector() {
     })
     // 二次开发
     localStorage.setItem('currUrl', window.location.href)
-    // router.push('/signin')
-    window.location.href = 'https://ai.bobfintech.com.cn/iam/login'
+    router.push('/signin')
+    // if (process.env.UNIFIED_LOGIN_SWITCH !== 'false') {
+    //   window.location.href = 'https://ai.bobfintech.com.cn/iam/login'
+    // }
   }
 
   return (
@@ -88,11 +90,11 @@ export default function AppSelector() {
                     <WorkplaceSelector />
                   </div>
                   <div className="px-1 py-1">
-                    {/* <Menu.Item>
+                    <Menu.Item>
                       <div className={itemClassName} onClick={() => setSettingVisible(true)}>
                         <div>{t('common.userProfile.settings')}</div>
                       </div>
-                    </Menu.Item> */}
+                    </Menu.Item>
                     {/* <Menu.Item>
                       <Link
                         className={classNames(itemClassName, 'group justify-between')}

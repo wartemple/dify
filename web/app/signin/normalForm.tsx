@@ -35,26 +35,6 @@ function reducer(state: IState, action: IAction) {
         ...state,
         formValid: true,
       }
-    case 'github_login':
-      return {
-        ...state,
-        github: true,
-      }
-    case 'github_login_failed':
-      return {
-        ...state,
-        github: false,
-      }
-    case 'google_login':
-      return {
-        ...state,
-        google: true,
-      }
-    case 'google_login_failed':
-      return {
-        ...state,
-        google: false,
-      }
     default:
       throw new Error('Unknown action.')
   }
@@ -63,7 +43,6 @@ function reducer(state: IState, action: IAction) {
 const NormalForm = () => {
   const { t } = useTranslation()
   const router = useRouter()
-  const { locale } = useContext(I18n)
 
   const [state, dispatch] = useReducer(reducer, {
     formValid: false,

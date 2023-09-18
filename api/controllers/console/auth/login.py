@@ -66,7 +66,7 @@ class RegisterApi(Resource):
             account.interface_language = 'zh-Hans'
             db.session.commit()
         # TODO: 为用户添加默认的glm引擎
-        self._init_engine(account)
+        # self._init_engine(account)
         return {'result': 'success'}
 
 
@@ -96,11 +96,14 @@ class LoginApi(Resource):
         except Exception:
             pass
 
+        from flask import g
         flask_login.login_user(account, remember=args['remember_me'])
         AccountService.update_last_login(account, request)
-
         # todo: return the user info
+        print(g._login_user)
 
+        current_app.login_manager._load_user()
+        print(g._login_user)
         return {'result': 'success'}
 
 

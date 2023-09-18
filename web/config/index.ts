@@ -22,9 +22,9 @@ else if (
 else {
   if (isDevelopment) {
     apiPrefix = 'http://localhost:5001/console/api'
-    apiPrefix = 'http://172.20.44.41:5001/console/api'
+    apiPrefix = 'http://172.19.214.171:5001/console/api'
     publicApiPrefix = 'https://dev.udify.app/api'
-    publicApiPrefix = 'http://172.20.44.41:5001/api'
+    publicApiPrefix = 'http://172.19.214.171:5001/api'
   }
   else {
     // const domainParts = globalThis.location?.host?.split('.');

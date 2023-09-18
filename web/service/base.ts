@@ -238,13 +238,13 @@ const baseFetch = (
                         })
                       }
                       else {
-                        globalThis.location.href = loginUrl
+                        // globalThis.location.href = loginUrl
                       }
                     }
                   })
                   return Promise.reject()
                 }
-                globalThis.location.href = loginUrl
+                // globalThis.location.href = loginUrl
                 break
               }
               case 403:

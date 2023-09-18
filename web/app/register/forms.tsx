@@ -6,8 +6,6 @@ import cn from 'classnames'
 import OneMoreStep from './oneMoreStep'
 
 const Forms = () => {
-  const searchParams = useSearchParams()
-  const step = searchParams.get('step')
 
   const getForm = () => {
     return <OneMoreStep />

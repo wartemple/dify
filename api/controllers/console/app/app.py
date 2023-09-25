@@ -40,7 +40,7 @@ model_config_fields = {
 
 prompt_case_fields = {
     "id": fields.String,
-    "prompt_content": fields.String,
+    "content": fields.Raw(attribute='prompt_content'),
     "is_like": fields.Boolean,
 }
 

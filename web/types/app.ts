@@ -251,3 +251,10 @@ export type AppTemplate = {
   /** Model */
   model_config: ModelConfig
 }
+
+
+export type PromptCase = {
+  id: string,
+  content: string,
+  is_like: boolean
+}

@@ -47,7 +47,7 @@ class App(db.Model):
 
     @property
     def prompts(self):
-        prompts = db.session.query(AppPromptCases).filter(AppPromptCases.app_id == self.id)
+        prompts = db.session.query(AppPromptCases).filter(AppPromptCases.app_id == self.id).all()
         return prompts
 
     @property
@@ -783,7 +783,8 @@ class AppPromptCases(db.Model):
         """加载提示词到 模型配置中 
         """
         old_like_prompt = db.session.query(AppPromptCases).filter(AppPromptCases.is_like == True).first()
-        old_like_prompt.is_like = False
+        if old_like_prompt:
+            old_like_prompt.is_like = False
         self.is_like = True
         app_model_config = db.session.query(AppModelConfig).filter(AppModelConfig.app_id == self.app_id).first()
         app_model_config.pre_prompt = self.prompt_content

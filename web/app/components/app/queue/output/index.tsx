@@ -355,47 +355,12 @@ const Output: FC<IOutput> = ({}) => {
   return (
     <>
       <div className="flex flex-col grow">
-        {/* Chat */}
-        {mode === AppType.chat && (
-          <div className="mt-[34px] h-full flex flex-col">
-            <div className={cn(doShowSuggestion ? 'pb-[140px]' : (isResponsing ? 'pb-[113px]' : 'pb-[76px]'), 'relative mt-1.5 grow h-[200px] overflow-hidden')}>
-              <div className="h-full overflow-y-auto overflow-x-hidden" ref={chatListDomRef}>
-                <Chat
-                  chatList={chatList}
-                  onSend={onSend}
-                  checkCanSend={checkCanSend}
-                  feedbackDisabled
-                  useCurrentUserAvatar
-                  isResponsing={isResponsing}
-                  canStopResponsing={!!messageTaskId}
-                  abortResponsing={async () => {
-                    await stopChatMessageResponding(appId, messageTaskId)
-                    setHasStopResponded(true)
-                    setResponsingFalse()
-                  }}
-                  isShowSuggestion={doShowSuggestion}
-                  suggestionList={suggestQuestions}
-                  isShowSpeechToText={speechToTextConfig.enabled && !!speech2textDefaultModel}
-                  isShowCitation={citationConfig.enabled}
-                  isShowCitationHitInfo
-                />
-              </div>
-            </div>
-          </div>
-        )}
         {/* Text  Generation */}
         {mode === AppType.completion && (
           <div className="mt-6">
             <GroupName name={t('appDebug.result')} />
             {/* {提示词编排结果：生成多个} */}
-            {(completionRes || isResponsing) && (
-              <TextGeneration
-                className="mt-2"
-                content={completionRes}
-                isLoading={!completionRes && isResponsing}
-                isInstalledApp={false}
-              />
-            )}
+            
           </div>
         )}
         {isShowFormattingChangeConfirm && (

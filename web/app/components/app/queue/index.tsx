@@ -12,20 +12,25 @@ import type { DataSet } from '@/models/datasets'
 import type { ModelConfig as BackendModelConfig } from '@/types/app'
 import ConfigContext from '@/context/debug-configuration'
 import ConfigModel from '@/app/components/app/configuration/config-model'
-import Config from '@/app/components/app/queue/edit-prompt'
+import PromptCaseCards from '@/app/components/app/queue/case-cards'
+import {
+  PlusIcon, ChevronDoubleRightIcon
+} from '@heroicons/react/24/solid'
 import Debug from '@/app/components/app/configuration/debug'
 import Confirm from '@/app/components/base/confirm'
 import { ProviderEnum } from '@/app/components/header/account-setting/model-page/declarations'
 import type { AppDetailResponse } from '@/models/app'
 import { ToastContext } from '@/app/components/base/toast'
 import { fetchAppDetail, updateAppModelConfig } from '@/service/apps'
+import { addPromptCase, likePromptCase, delPromptCase} from '@/service/prompt'
 import { promptVariablesToUserInputsForm, userInputsFormToPromptVariables } from '@/utils/model-config'
 import { fetchDatasets } from '@/service/datasets'
 import AccountSetting from '@/app/components/header/account-setting'
 import { useProviderContext } from '@/context/provider-context'
 import { AppType } from '@/types/app'
 import InputPanel from '@/app/components/app/queue/input-panel'
-import Output from '@/app/components/app/queue/results'
+import Output from '@/app/components/app/queue/output'
+import type { PromptCase as TypePromptCase } from '@/types/app'
 
 const Configuration: FC = () => {
   const { t } = useTranslation()
@@ -85,7 +90,8 @@ const Configuration: FC = () => {
     retriever_resource: null,
     dataSets: [],
   })
-
+  const [promptCases, setpromptCases] = useState([])
+  
   const setModelConfig = (newModelConfig: ModelConfig) => {
     doSetModelConfig(newModelConfig)
   }
@@ -139,6 +145,9 @@ const Configuration: FC = () => {
       setMode(res.mode)
       const modelConfig = res.model_config
       const model = res.model_config.model
+      if (Array.isArray(res.prompts)) {
+        setpromptCases(res.prompts)
+      }
 
       let datasets: any = null
       if (modelConfig.agent_mode?.enabled)
@@ -187,12 +196,32 @@ const Configuration: FC = () => {
     })
   }, [appId])
 
+
+  const addPrompt = () => {
+    addPromptCase(appId, { content: '{{query}}' }).then((res) => {
+      setpromptCases(oldArray => [res, ...oldArray])
+
+    })
+  }
+  const AddRunButton = () => {
+    return (
+      <Button
+        type="primary"
+        onClick={addPrompt}
+        className="w-[120px] !h-8">
+        <PlusIcon className="shrink-0 w-4 h-4 mr-1" aria-hidden="true" />
+        <span className='uppercase text-[13px]'>提示词样例</span>
+      </Button>
+    )
+  }
+
+
   if (isLoading) {
     return <div className='flex h-full items-center justify-center'>
       <Loading type='area' />
     </div>
   }
-
+  
   return (
     <ConfigContext.Provider value={{
       appId,
@@ -233,13 +262,14 @@ const Configuration: FC = () => {
         <div className="flex flex-col h-full auto-cols-max">
           <div className='flex items-center justify-between px-6 border-b shrink-0 h-14 boder-gray-100'>
             <div className='text-xl text-gray-900'>{'提示词实验室'}</div>
+            <AddRunButton></AddRunButton>
           </div>
           <div className="flex flex-col overflow-y-auto py-4 px-6 bg-gray-50 ">
             <InputPanel hasSetAPIKEY={hasSetAPIKEY} onSetting={showSetAPIKey} />
           </div>
           <div className='flex flex-col grow h-[200px] '>
-              <div className="shrink-0 h-full overflow-y-auto border-r border-gray-100 py-4 px-6">
-                <Config />
+              <div className="shrink-0 h-full overflow-y-auto border-r border-gray-100 py-4 px-6 ">
+                <PromptCaseCards promptCases={promptCases} setPromptCases={setpromptCases}/>
               </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ export type IPromptProps = {
   promptTemplate: string
   promptVariables: PromptVariable[]
   readonly?: boolean
-  onChange?: (promp: string, promptVariables: PromptVariable[]) => void
+  onChange?: (promp: string, id: string, promptVariables: PromptVariable[]) => void
 }
 
 const Prompt: FC<IPromptProps> = ({
@@ -54,7 +54,7 @@ const Prompt: FC<IPromptProps> = ({
 
   const handleAutoAdd = (isAdd: boolean) => {
     return () => {
-      onChange?.(newTemplates, isAdd ? newPromptVariables : [])
+      onChange?.(newTemplates, '', isAdd ? newPromptVariables : [])
       hideConfirmAddVar()
     }
   }

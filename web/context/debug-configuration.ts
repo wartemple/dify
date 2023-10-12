@@ -1,6 +1,8 @@
 import { createContext } from 'use-context-selector'
 import type { CitationConfig, CompletionParams, Inputs, ModelConfig, MoreLikeThisConfig, PromptConfig, SpeechToTextConfig, SuggestedQuestionsAfterAnswerConfig } from '@/models/debug'
 import type { DataSet } from '@/models/datasets'
+import type { PromptCase } from '@/types/app'
+
 
 type IDebugConfiguration = {
   appId: string
@@ -36,7 +38,9 @@ type IDebugConfiguration = {
   modelConfig: ModelConfig
   setModelConfig: (modelConfig: ModelConfig) => void
   dataSets: DataSet[]
-  setDataSets: (dataSet: DataSet[]) => void
+  setDataSets: (dataSet: DataSet[]) => void,
+  promptCases: PromptCase[],
+  setpromptCases: (promptCases: PromptCase[]) => void
 }
 
 const DebugConfigurationContext = createContext<IDebugConfiguration>({
@@ -102,6 +106,8 @@ const DebugConfigurationContext = createContext<IDebugConfiguration>({
   setModelConfig: () => { },
   dataSets: [],
   setDataSets: () => { },
+  promptCases: [],
+  setpromptCases: () => { },
 })
 
 export default DebugConfigurationContext

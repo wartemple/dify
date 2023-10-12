@@ -9,15 +9,11 @@ import Button from '../../base/button'
 import Loading from '../../base/loading'
 import type { CompletionParams, Inputs, ModelConfig, MoreLikeThisConfig, PromptConfig, PromptVariable } from '@/models/debug'
 import type { DataSet } from '@/models/datasets'
-import type { ModelConfig as BackendModelConfig } from '@/types/app'
+import type { ModelConfig as BackendModelConfig, PromptCase } from '@/types/app'
 import ConfigContext from '@/context/debug-configuration'
-import ConfigModel from '@/app/components/app/configuration/config-model'
 import PromptCaseCards from '@/app/components/app/queue/case-cards'
-import {
-  PlusIcon, ChevronDoubleRightIcon
-} from '@heroicons/react/24/solid'
-import Debug from '@/app/components/app/configuration/debug'
-import Confirm from '@/app/components/base/confirm'
+import { fetchConvesationMessages, fetchSuggestedQuestions, sendChatMessage, sendCompletionMessage, stopChatMessageResponding } from '@/service/debug'
+import { PlusIcon, ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
 import { ProviderEnum } from '@/app/components/header/account-setting/model-page/declarations'
 import type { AppDetailResponse } from '@/models/app'
 import { ToastContext } from '@/app/components/base/toast'
@@ -25,14 +21,11 @@ import { fetchAppDetail, updateAppModelConfig } from '@/service/apps'
 import { addPromptCase, likePromptCase, delPromptCase} from '@/service/prompt'
 import { promptVariablesToUserInputsForm, userInputsFormToPromptVariables } from '@/utils/model-config'
 import { fetchDatasets } from '@/service/datasets'
-import AccountSetting from '@/app/components/header/account-setting'
 import { useProviderContext } from '@/context/provider-context'
-import { AppType } from '@/types/app'
 import InputPanel from '@/app/components/app/queue/input-panel'
-import Output from '@/app/components/app/queue/output'
-import type { PromptCase as TypePromptCase } from '@/types/app'
 
-const Configuration: FC = () => {
+
+const PromptLab: FC = () => {
   const { t } = useTranslation()
   const { notify } = useContext(ToastContext)
 
@@ -90,14 +83,14 @@ const Configuration: FC = () => {
     retriever_resource: null,
     dataSets: [],
   })
-  const [promptCases, setpromptCases] = useState([])
   
   const setModelConfig = (newModelConfig: ModelConfig) => {
     doSetModelConfig(newModelConfig)
   }
-
+  
   const [dataSets, setDataSets] = useState<DataSet[]>([])
-
+  
+  const [promptCases, setpromptCases] = useState<PromptCase[]>([])
   const syncToPublishedConfig = (_publishedConfig: any) => {
     const modelConfig = _publishedConfig.modelConfig
     setModelConfig(_publishedConfig.modelConfig)
@@ -139,15 +132,19 @@ const Configuration: FC = () => {
   const hasSetAPIKEY = hasSetCustomAPIKEY || !isTrailFinished
 
   const [isShowSetAPIKey, { setTrue: showSetAPIKey, setFalse: hideSetAPIkey }] = useBoolean()
-
+  const [isResponsing, { setTrue: setResponsingTrue, setFalse: setResponsingFalse }] = useBoolean(false)
+  const postDatasets = dataSets.map(({ id }) => ({
+    dataset: {
+      enabled: true,
+      id,
+    },
+  }))
+  // 初始化数据
   useEffect(() => {
     (fetchAppDetail({ url: '/apps', id: appId }) as any).then(async (res: AppDetailResponse) => {
       setMode(res.mode)
       const modelConfig = res.model_config
       const model = res.model_config.model
-      if (Array.isArray(res.prompts)) {
-        setpromptCases(res.prompts)
-      }
 
       let datasets: any = null
       if (modelConfig.agent_mode?.enabled)
@@ -193,14 +190,57 @@ const Configuration: FC = () => {
       setPublishedConfig(config)
 
       setHasFetchedDetail(true)
+      if (Array.isArray(res.prompts)) {
+        const initPromptCase: PromptCase[]  = res.prompts.map(item => {
+          item.result = ''
+          item.model_config = {
+            pre_prompt: item.content,
+            user_input_form: modelConfig.user_input_form,
+            opening_statement: introduction,
+            suggested_questions_after_answer: suggestedQuestionsAfterAnswerConfig,
+            speech_to_text: speechToTextConfig,
+            retriever_resource: citationConfig,
+            more_like_this: moreLikeThisConfig,
+            agent_mode: {
+              enabled: true,
+              tools: [...postDatasets],
+            },
+            model: model
+          }
+          return item
+        })
+        setpromptCases(initPromptCase)
+      }
     })
   }, [appId])
 
-
   const addPrompt = () => {
-    addPromptCase(appId, { content: '{{query}}' }).then((res) => {
-      setpromptCases(oldArray => [res, ...oldArray])
-
+    addPromptCase(appId, { content: '{{query}}' }).then((res: PromptCase) => {
+      const newPromptCase: PromptCase = {
+        id: res.id,
+        content: res.content,
+        is_like: res.is_like,
+        result: '',
+        model_config: {
+          pre_prompt: res.content,
+          user_input_form: promptVariablesToUserInputsForm(modelConfig.configs.prompt_variables),
+          opening_statement: introduction,
+          suggested_questions_after_answer: suggestedQuestionsAfterAnswerConfig,
+          speech_to_text: speechToTextConfig,
+          retriever_resource: citationConfig,
+          more_like_this: moreLikeThisConfig,
+          agent_mode: {
+            enabled: true,
+            tools: [...postDatasets],
+          },
+          model: {
+            provider: modelConfig.provider,
+            name: modelConfig.model_id,
+            completion_params: completionParams as any,
+          }
+        }
+      }
+      setpromptCases([newPromptCase, ...promptCases])
     })
   }
   const AddRunButton = () => {
@@ -215,11 +255,76 @@ const Configuration: FC = () => {
     )
   }
 
-
   if (isLoading) {
     return <div className='flex h-full items-center justify-center'>
       <Loading type='area' />
     </div>
+  }
+  // 发送消息
+
+  const logError = (message: string) => {
+    notify({ type: 'error', message })
+  }
+  const checkCanSend = () => {
+    let hasEmptyInput = ''
+    const requiredVars = modelConfig.configs.prompt_variables.filter(({ key, name, required }) => {
+      const res = (!key || !key.trim()) || (!name || !name.trim()) || (required || required === undefined || required === null)
+      return res
+    }) // compatible with old version
+    // debugger
+    requiredVars.forEach(({ key, name }) => {
+      if (hasEmptyInput)
+        return
+
+      if (!inputs[key])
+        hasEmptyInput = name
+    })
+
+    if (hasEmptyInput) {
+      logError(t('appDebug.errorMessage.valueOfVarRequired', { key: hasEmptyInput }))
+      return false
+    }
+    return !hasEmptyInput
+  }
+  const sendData = async () => {
+    if (isResponsing) {
+      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
+      return false
+    }
+    if (!checkCanSend())
+      return
+    setResponsingTrue()
+    
+    promptCases.map((item) => {
+      const res: string[] = []
+      const data = {
+        inputs,
+        model_config: item.model_config,
+      }
+      const result = sendCompletionMessage(appId, data, {
+        onData: (data: string) => {
+          res.push(data)
+          item.result = res.join('')
+        },
+        onCompleted() {
+          const newPromptCases = promptCases.map((prompt) => {
+            if (prompt.id === item.id) {
+              prompt.result = item.result
+              return prompt
+            } else {
+              return prompt
+            }
+          })
+          setpromptCases(newPromptCases)
+        },
+        onError() {
+          setResponsingFalse()
+        },
+      })
+      console.log(result)
+    })
+    setResponsingFalse()
+    setpromptCases(promptCases)
   }
   
   return (
@@ -256,6 +361,8 @@ const Configuration: FC = () => {
       setModelConfig,
       dataSets,
       setDataSets,
+      promptCases,
+      setpromptCases
     }}
     >
       <>
@@ -265,11 +372,11 @@ const Configuration: FC = () => {
             <AddRunButton></AddRunButton>
           </div>
           <div className="flex flex-col overflow-y-auto py-4 px-6 bg-gray-50 ">
-            <InputPanel hasSetAPIKEY={hasSetAPIKEY} onSetting={showSetAPIKey} />
+            <InputPanel hasSetAPIKEY={hasSetAPIKEY} onSetting={showSetAPIKey} sendTextCompletion={sendData} />
           </div>
           <div className='flex flex-col grow h-[200px] '>
               <div className="shrink-0 h-full overflow-y-auto border-r border-gray-100 py-4 px-6 ">
-                <PromptCaseCards promptCases={promptCases} setPromptCases={setpromptCases}/>
+                <PromptCaseCards />
               </div>
           </div>
         </div>
@@ -277,4 +384,4 @@ const Configuration: FC = () => {
     </ConfigContext.Provider>
   )
 }
-export default React.memo(Configuration)
+export default React.memo(PromptLab)

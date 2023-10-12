@@ -22,11 +22,13 @@ import { useProviderContext } from '@/context/provider-context'
 type IInputPanel = {
   hasSetAPIKEY: boolean
   onSetting: () => void
+  sendTextCompletion?: () => void
 }
 
 const InputPanel: FC<IInputPanel> = ({
   hasSetAPIKEY = true,
   onSetting,
+  sendTextCompletion,
 }) => {
   const { t } = useTranslation()
   const {
@@ -144,64 +146,7 @@ const InputPanel: FC<IInputPanel> = ({
 
   const [completionRes, setCompletionRes] = useState('')
 
-  const sendTextCompletion = async () => {
-    if (isResponsing) {
-      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
-      return false
-    }
-
-    if (!checkCanSend())
-      return
-
-    const postDatasets = dataSets.map(({ id }) => ({
-      dataset: {
-        enabled: true,
-        id,
-      },
-    }))
-
-    const postModelConfig: BackendModelConfig = {
-      pre_prompt: modelConfig.configs.prompt_template,
-      user_input_form: promptVariablesToUserInputsForm(modelConfig.configs.prompt_variables),
-      opening_statement: introduction,
-      suggested_questions_after_answer: suggestedQuestionsAfterAnswerConfig,
-      speech_to_text: speechToTextConfig,
-      retriever_resource: citationConfig,
-      more_like_this: moreLikeThisConfig,
-      agent_mode: {
-        enabled: true,
-        tools: [...postDatasets],
-      },
-      model: {
-        provider: modelConfig.provider,
-        name: modelConfig.model_id,
-        completion_params: completionParams as any,
-      },
-    }
-
-    const data = {
-      inputs,
-      model_config: postModelConfig,
-    }
-
-    setCompletionRes('')
-    const res: string[] = []
-
-    setResponsingTrue()
-    sendCompletionMessage(appId, data, {
-      onData: (data: string) => {
-        res.push(data)
-        setCompletionRes(res.join(''))
-      },
-      onCompleted() {
-        setResponsingFalse()
-      },
-      onError() {
-        setResponsingFalse()
-      },
-    })
-  }
-
+  sendTextCompletion
   return (
     <>
       <div className="shrink-0">

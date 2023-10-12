@@ -201,6 +201,13 @@ export type SiteConfig = {
   icon_background: string
 }
 
+export type PromptCase = {
+  id: string
+  content: string
+  is_like: boolean
+  result: string
+  model_config: ModelConfig
+}
 /**
  * App
  */
@@ -236,6 +243,8 @@ export type App = {
   site: SiteConfig
   /** api site url */
   api_base_url: string
+  /** api site url */
+  prompts: PromptCase[]
 }
 
 /**
@@ -253,8 +262,3 @@ export type AppTemplate = {
 }
 
 
-export type PromptCase = {
-  id: string,
-  content: string,
-  is_like: boolean
-}

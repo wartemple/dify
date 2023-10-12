@@ -11,7 +11,7 @@ import Button from '../../base/button'
 import Loading from '../../base/loading'
 import type { CompletionParams, Inputs, ModelConfig, MoreLikeThisConfig, PromptConfig, PromptVariable } from '@/models/debug'
 import type { DataSet } from '@/models/datasets'
-import type { ModelConfig as BackendModelConfig } from '@/types/app'
+import type { ModelConfig as BackendModelConfig, PromptCase } from '@/types/app'
 import ConfigContext from '@/context/debug-configuration'
 import ConfigModel from '@/app/components/app/configuration/config-model'
 import Config from '@/app/components/app/configuration/config'
@@ -45,6 +45,7 @@ const Configuration: FC = () => {
   const [conversationId, setConversationId] = useState<string | null>('')
   const [introduction, setIntroduction] = useState<string>('')
   const [controlClearChatMessage, setControlClearChatMessage] = useState(0)
+  const [promptCases, setpromptCases] = useState<PromptCase[]>([])
   const [prevPromptConfig, setPrevPromptConfig] = useState<PromptConfig>({
     prompt_template: '',
     prompt_variables: [],
@@ -297,6 +298,8 @@ const Configuration: FC = () => {
       setModelConfig,
       dataSets,
       setDataSets,
+      promptCases,
+      setpromptCases
     }}
     >
       <>

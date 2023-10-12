@@ -22,61 +22,104 @@ import Output from '@/app/components/app/queue/output'
 import {
   PlusIcon, ChevronDoubleRightIcon
 } from '@heroicons/react/24/solid'
-
+import { fetchConvesationMessages, fetchSuggestedQuestions, sendChatMessage, sendCompletionMessage, stopChatMessageResponding } from '@/service/debug'
 import { likePromptCase, delPromptCase, PatchPromptCase} from '@/service/prompt'
 import type { PromptCase as TypePromptCase } from '@/types/app'
+import { ToastContext } from '@/app/components/base/toast'
+import { useTranslation } from 'react-i18next'
 
-
-type IPromptCaseCards = {
-  promptCases: TypePromptCase[],
-  setPromptCases: (promptCases: TypePromptCase[]) => void
-}
-
-const PromptCaseCards: FC<IPromptCaseCards> = ({
-  promptCases,
-  setPromptCases
-}) => {
+const PromptCaseCards = () => {
   const {
     appId,
     mode,
-    introduction,
-    setIntroduction,
     modelConfig,
     setModelConfig,
     setPrevPromptConfig,
-    setFormattingChanged,
-    moreLikeThisConfig,
-    setMoreLikeThisConfig,
-    suggestedQuestionsAfterAnswerConfig,
-    setSuggestedQuestionsAfterAnswerConfig,
-    speechToTextConfig,
-    setSpeechToTextConfig,
-    citationConfig,
-    setCitationConfig,
+    inputs,
+    promptCases,
+    setpromptCases
   } = useContext(ConfigContext)
-  const isChatApp = mode === AppType.chat
-  const { speech2textDefaultModel } = useProviderContext()
-  const response = '大家好，我叫XXX，今年XX岁，是一名小学生。我性格开朗、乐观向上，善良文静，热爱尝试新鲜事物。我在学习上成绩优秀，善于发现问题并善于寻找解决方案。擅长语文与数学，习惯独立思考，并善于发现事物异常现象，并能及时提出完善的解决方案。大家好，我叫XXX，今年XX岁，是一名小学生。我性格开朗、乐观向上，善良文静，热爱尝试新鲜事物。我在学习上成绩优秀，善于发现问题并善于寻找解决方案。擅长语文与数学，习惯独立思考，并善于发现事物异常现象，并能及时提出完善的解决方案。兴趣广泛，在精力充沛的日子里，我常常给自己闯荡不同环境的机会，一来健身，二来也能增加见识。除了学习之外，我也经常参加许多活动，包括参加学校跳舞队，帮助社区老人及低收入家庭等。积极参与、无私奉献，一方面帮助他人，另一方面也锻炼了自己的领导力及大家好，我叫XXX，今年XX岁，是一名小学生。我性格开朗、乐观向上，善良文静，热爱尝试新鲜事物。我在学习上成绩优秀，善于发现问题并善于寻找解决方案。擅长语文与数学，习惯独立思考，并善于发现事物异常现象，并能及时提出完善的解决方案。兴趣广泛，在精力充沛的日子里，我常常给自己闯荡不同环境的机会，一来健身，二来也能增加见识。除了学习之外，我也经常参加许多活动，包括参加学校跳舞队，帮助社区老人及低收入家庭等。积极参与、无私奉献，一方面帮助他人，另一方面也锻炼了自己的领导力及大家好，我叫XXX，今年XX岁，是一名小学生。我性格开朗、乐观向上，善良文静，热爱尝试新鲜事物。我在学习上成绩优秀，善于发现问题并善于寻找解决方案。擅长语文与数学，习惯独立思考，并善于发现事物异常现象，并能及时提出完善的解决方案。兴趣广泛，在精力充沛的日子里，我常常给自己闯荡不同环境的机会，一来健身，二来也能增加见识。除了学习之外，我也经常参加许多活动，包括参加学校跳舞队，帮助社区老人及低收入家庭等。积极参与、无私奉献，一方面帮助他人，另一方面也锻炼了自己的领导力及大家好，我叫XXX，今年XX岁，是一名小学生。我性格开朗、乐观向上，善良文静，热爱尝试新鲜事物。我在学习上成绩优秀，善于发现问题并善于寻找解决方案。擅长语文与数学，习惯独立思考，并善于发现事物异常现象，并能及时提出完善的解决方案。兴趣广泛，在精力充沛的日子里，我常常给自己闯荡不同环境的机会，一来健身，二来也能增加见识。除了学习之外，我也经常参加许多活动，包括参加学校跳舞队，帮助社区老人及低收入家庭等。积极参与、无私奉献，一方面帮助他人，另一方面也锻炼了自己的领导力及兴趣广泛，在精力充沛的日子里，我常常给自己闯荡不同环境的机会，一来健身，二来也能增加见识。除了学习之外，我也经常参加许多活动，包括参加学校跳舞队，帮助社区老人及低收入家庭等。积极参与、无私奉献，一方面帮助他人，另一方面也锻炼了自己的领导力及'
-
+  const { t } = useTranslation()
+  const { notify } = useContext(ToastContext)
+  const [isResponsing, { setTrue: setResponsingTrue, setFalse: setResponsingFalse }] = useBoolean(false)
   const promptTemplate = modelConfig.configs.prompt_template
   const promptVariables = modelConfig.configs.prompt_variables
   const handlePromptChange = (newTemplate: string, key: string, newVariables: PromptVariable[]) => {
     PatchPromptCase(appId, key, { content: newTemplate })
+    const newPromptCases = promptCases.map((item) => {
+      if (item.id === key) {
+        item.content = newTemplate
+        item.model_config.pre_prompt = newTemplate
+        return item
+      } else {
+        return item
+      }
+    })
+    setpromptCases(newPromptCases)
+  }
+  const logError = (message: string) => {
+    notify({ type: 'error', message })
+  }
+  const checkCanSend = () => {
+    let hasEmptyInput = ''
+    const requiredVars = modelConfig.configs.prompt_variables.filter(({ key, name, required }) => {
+      const res = (!key || !key.trim()) || (!name || !name.trim()) || (required || required === undefined || required === null)
+      return res
+    }) // compatible with old version
+    // debugger
+    requiredVars.forEach(({ key, name }) => {
+      if (hasEmptyInput)
+        return
+
+      if (!inputs[key])
+        hasEmptyInput = name
+    })
+
+    if (hasEmptyInput) {
+      logError(t('appDebug.errorMessage.valueOfVarRequired', { key: hasEmptyInput }))
+      return false
+    }
+    return !hasEmptyInput
   }
 
-  const handlePromptVariablesNameChange = (newVariables: PromptVariable[]) => {
-    setPrevPromptConfig(modelConfig.configs)
-    const newModelConfig = produce(modelConfig, (draft) => {
-      draft.configs.prompt_variables = newVariables
-    })
-    setModelConfig(newModelConfig)
-  }
-  const publishButtonClassname = (isLike: boolean) => {
-    if (isLike) {
-      return 'bg-orange-500 inline-flex text-white justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-base border-solid border border-gray-200 cursor-pointer text-gray-500  w-20 !h-8 !text-[13px]'
-    } else {
-      return  'inline-flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-base border-solid border border-gray-200 cursor-pointer text-gray-500  w-20 !h-8 !text-[13px]'
+  const runCompletion = async (clickCase) => {
+    console.log(clickCase)
+    if (isResponsing) {
+      notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
+      return false
     }
+    if (!checkCanSend())
+      return
+    setResponsingTrue()
+    const res: string[] = []
+    const data = {
+      inputs,
+      model_config: clickCase.model_config,
+    }
+    sendCompletionMessage(appId, data, {
+      onData: (data: string) => {
+        res.push(data)
+        clickCase.result = res.join('')
+      },
+      onCompleted() {
+        console.log(clickCase)
+        const newPromptCases = promptCases.map((item) => {
+          if (item.id === clickCase.id) {
+            item.result = clickCase.result
+            return item
+          } else {
+            return item
+          }
+        })
+        setpromptCases(newPromptCases)
+        setResponsingFalse()
+      },
+      onError() {},
+    })
+  }
+
+  const publishButtonClassname = (isLike: boolean) => {
+    return  'w-[120px] inline-flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-base border-solid border border-gray-200 cursor-pointer text-gray-500  w-20 !h-8 !text-[13px]'
   }
   
 
@@ -93,6 +136,24 @@ const PromptCaseCards: FC<IPromptCaseCards> = ({
               promptVariables={promptVariables}
               onChange={handlePromptChange}
             />
+            <div className=' flex item-center h-14 px-4'>
+              <div className=' flex items-center justify-between w-full'>
+                <div onClick={() => {runCompletion(item)}} className={publishButtonClassname(item.is_like)}>
+                  单独运行
+                </div>
+                <div onClick={() => {
+                    likePromptCase(appId, item.id)
+                  }} className={publishButtonClassname(item.is_like)}>
+                  更新为样例
+                </div>
+                <div onClick={() => {
+                    setpromptCases(promptCases.filter(a => a.id !== item.id));
+                    delPromptCase(appId, item.id)
+                  }} className='w-[120px] bg-red-500  inline-flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-white border-solid border border-gray-200 cursor-pointer text-gray-500  w-20 !h-8 !text-[13px]'>
+                  删除提示词
+                </div>
+              </div>
+            </div>
           </div>
           <div className='pr-5 grow'>
             <div className="overflow-y-auto  bg-gray-50 flex-1 flex-col border border-gray-400 rounded-xl ">
@@ -100,26 +161,10 @@ const PromptCaseCards: FC<IPromptCaseCards> = ({
                 <div className='h2'>结果</div>
               </div>
               <div className='block-input w-full overflow-y-auto border-none rounded-lg'>
-                <div className='h-[180px]  overflow-y-auto'>
+                <div className='h-[240px]  overflow-y-auto'>
                   <div className='h-full px-4 py-1'>
-                    <textarea value={response} className=' focus:outline-none bg-transparent text-sm block w-full h-full absolut3e resize-none'>
-                      
+                    <textarea value={item.result? item.result : ''} readOnly className=' focus:outline-none bg-transparent text-sm block w-full h-full absolut3e resize-none'>
                     </textarea>
-                  </div>
-                </div>
-                <div className=' flex item-center h-14 px-4'>
-                  <div className=' flex items-center justify-between w-full'>
-                    <div onClick={() => {
-                        likePromptCase(appId, item.id)
-                      }} className={publishButtonClassname(item.is_like)}>
-                      发布
-                    </div>
-                    <div onClick={() => {
-                        setPromptCases(promptCases.filter(a => a.id !== item.id));
-                        delPromptCase(appId, item.id)
-                      }} className='w-[120px] bg-red-500  inline-flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-white border-solid border border-gray-200 cursor-pointer text-gray-500  w-20 !h-8 !text-[13px]'>
-                      删除提示词
-                    </div>
                   </div>
                 </div>
               </div>

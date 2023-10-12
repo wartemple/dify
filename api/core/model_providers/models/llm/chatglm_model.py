@@ -45,7 +45,7 @@ class ChatGLMModel(BaseLLM):
         :return:
         """
         prompts = self._get_prompt_from_messages(messages)
-        return max(self._client.get_num_tokens(prompts), 0)
+        # return max(self._client.get_num_tokens(prompts), 0)
         # update: 离线从huggingFace加载token文件修改为加载本地自定义已下载token
         try:
             from transformers import GPT2TokenizerFast

@@ -30,9 +30,8 @@ class DatasetRetrieverTool(BaseTool):
     dataset_id: str
     k: int = 3
     conversation_message_task: ConversationMessageTask
-    return_resource: str
+    return_resource: bool
     retriever_from: str
-
 
     @classmethod
     def from_dataset(cls, dataset: Dataset, **kwargs):
@@ -94,7 +93,10 @@ class DatasetRetrieverTool(BaseTool):
                     query,
                     search_type='similarity_score_threshold',
                     search_kwargs={
-                        'k': self.k
+                        'k': self.k,
+                        'filter': {
+                            'group_id': [dataset.id]
+                        }
                     }
                 )
             else:

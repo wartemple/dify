@@ -2,13 +2,14 @@ import json
 from json import JSONDecodeError
 from typing import Type
 
-from langchain.llms import ChatGLM
+from langchain.schema import HumanMessage
 
 from core.helper import encrypter
 from core.model_providers.models.base import BaseProviderModel
 from core.model_providers.models.entity.model_params import ModelKwargsRules, KwargRule, ModelType
-from core.model_providers.models.llm.chatglm_model import ChatGLMModel
+from core.model_providers.models.llm.baichuan_model import BaichuanModel
 from core.model_providers.providers.base import BaseModelProvider, CredentialsValidateFailedError
+from core.third_party.langchain.llms.baichuan_llm import BaichuanChatLLM
 from models.provider import ProviderType
 
 
@@ -25,8 +26,8 @@ class BaichuanProvider(BaseModelProvider):
         if model_type == ModelType.TEXT_GENERATION:
             return [
                 {
-                    'id': 'baichuan-7b',
-                    'name': '百川智能-7B',
+                    'id': 'baichuan2-53b',
+                    'name': 'Baichuan2-53B',
                 }
             ]
         else:
@@ -40,7 +41,7 @@ class BaichuanProvider(BaseModelProvider):
         :return:
         """
         if model_type == ModelType.TEXT_GENERATION:
-            model_class = ChatGLMModel
+            model_class = BaichuanModel
         else:
             raise NotImplementedError
 
@@ -55,11 +56,11 @@ class BaichuanProvider(BaseModelProvider):
         :return:
         """
         return ModelKwargsRules(
-            temperature=KwargRule[float](min=0, max=2, default=1),
-            top_p=KwargRule[float](min=0, max=1, default=0.7),
+            temperature=KwargRule[float](min=0, max=1, default=0.3, precision=2),
+            top_p=KwargRule[float](min=0, max=0.99, default=0.85, precision=2),
             presence_penalty=KwargRule[float](enabled=False),
             frequency_penalty=KwargRule[float](enabled=False),
-            max_tokens=KwargRule[int](alias='max_token', min=10, max=8000, default=2048),
+            max_tokens=KwargRule[int](enabled=False),
         )
 
     @classmethod
@@ -67,26 +68,31 @@ class BaichuanProvider(BaseModelProvider):
         """
         Validates the given credentials.
         """
-        if 'api_base' not in credentials:
-            raise CredentialsValidateFailedError('ChatGLM Endpoint URL must be provided.')
+        if 'api_key' not in credentials:
+            raise CredentialsValidateFailedError('Baichuan api_key must be provided.')
+
+        if 'secret_key' not in credentials:
+            raise CredentialsValidateFailedError('Baichuan secret_key must be provided.')
 
         try:
             credential_kwargs = {
-                'endpoint_url': credentials['api_base']
+                'api_key': credentials['api_key'],
+                'secret_key': credentials['secret_key'],
             }
 
-            llm = ChatGLM(
-                max_token=10,
+            llm = BaichuanChatLLM(
+                temperature=0,
                 **credential_kwargs
             )
 
-            llm("ping")
+            llm([HumanMessage(content='ping')])
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     @classmethod
     def encrypt_provider_credentials(cls, tenant_id: str, credentials: dict) -> dict:
-        credentials['api_base'] = encrypter.encrypt_token(tenant_id, credentials['api_base'])
+        credentials['api_key'] = encrypter.encrypt_token(tenant_id, credentials['api_key'])
+        credentials['secret_key'] = encrypter.encrypt_token(tenant_id, credentials['secret_key'])
         return credentials
 
     def get_provider_credentials(self, obfuscated: bool = False) -> dict:
@@ -95,21 +101,34 @@ class BaichuanProvider(BaseModelProvider):
                 credentials = json.loads(self.provider.encrypted_config)
             except JSONDecodeError:
                 credentials = {
-                    'api_base': None
+                    'api_key': None,
+                    'secret_key': None,
                 }
 
-            if credentials['api_base']:
-                credentials['api_base'] = encrypter.decrypt_token(
+            if credentials['api_key']:
+                credentials['api_key'] = encrypter.decrypt_token(
                     self.provider.tenant_id,
-                    credentials['api_base']
+                    credentials['api_key']
                 )
 
                 if obfuscated:
-                    credentials['api_base'] = encrypter.obfuscated_token(credentials['api_base'])
+                    credentials['api_key'] = encrypter.obfuscated_token(credentials['api_key'])
+
+            if credentials['secret_key']:
+                credentials['secret_key'] = encrypter.decrypt_token(
+                    self.provider.tenant_id,
+                    credentials['secret_key']
+                )
+
+                if obfuscated:
+                    credentials['secret_key'] = encrypter.obfuscated_token(credentials['secret_key'])
 
             return credentials
+        else:
+            return {}
 
-        return {}
+    def should_deduct_quota(self):
+        return True
 
     @classmethod
     def is_model_credentials_valid_or_raise(cls, model_name: str, model_type: ModelType, credentials: dict):

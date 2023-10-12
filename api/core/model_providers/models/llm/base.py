@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from abc import abstractmethod
 from typing import List, Optional, Any, Union, Tuple
 import decimal
@@ -10,14 +11,18 @@ from langchain.memory.chat_memory import BaseChatMemory
 from langchain.schema import LLMResult, SystemMessage, AIMessage, HumanMessage, BaseMessage, ChatGeneration
 
 from core.callback_handler.std_out_callback_handler import DifyStreamingStdOutCallbackHandler, DifyStdOutCallbackHandler
+from core.helper import moderation
 from core.model_providers.models.base import BaseProviderModel
-from core.model_providers.models.entity.message import PromptMessage, MessageType, LLMRunResult, to_prompt_messages
+from core.model_providers.models.entity.message import PromptMessage, MessageType, LLMRunResult, to_prompt_messages, \
+    to_lc_messages
 from core.model_providers.models.entity.model_params import ModelType, ModelKwargs, ModelMode, ModelKwargsRules
 from core.model_providers.providers.base import BaseModelProvider
 from core.prompt.prompt_builder import PromptBuilder
 from core.prompt.prompt_template import JinjaPromptTemplate
 from core.third_party.langchain.llms.fake import FakeLLM
 import logging
+
+from extensions.ext_database import db
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +121,15 @@ class BaseLLM(BaseProviderModel):
         :param callbacks:
         :return:
         """
+        moderation_result = moderation.check_moderation(
+            self.model_provider,
+            "\n".join([message.content for message in messages])
+        )
+
+        if not moderation_result:
+            kwargs['fake_response'] = "I apologize for any confusion, " \
+                                      "but I'm an AI assistant to be helpful, harmless, and honest."
+
         if self.deduct_quota:
             self.model_provider.check_quota_over_limit()
 
@@ -144,8 +158,11 @@ class BaseLLM(BaseProviderModel):
             except Exception as ex:
                 raise self.handle_exceptions(ex)
 
+        function_call = None
         if isinstance(result.generations[0][0], ChatGeneration):
             completion_content = result.generations[0][0].message.content
+            if 'function_call' in result.generations[0][0].message.additional_kwargs:
+                function_call = result.generations[0][0].message.additional_kwargs.get('function_call')
         else:
             completion_content = result.generations[0][0].text
 
@@ -178,7 +195,8 @@ class BaseLLM(BaseProviderModel):
         return LLMRunResult(
             content=completion_content,
             prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens
+            completion_tokens=completion_tokens,
+            function_call=function_call
         )
 
     @abstractmethod
@@ -429,16 +447,7 @@ class BaseLLM(BaseProviderModel):
             if len(messages) == 0:
                 return []
 
-            chat_messages = []
-            for message in messages:
-                if message.type == MessageType.HUMAN:
-                    chat_messages.append(HumanMessage(content=message.content))
-                elif message.type == MessageType.ASSISTANT:
-                    chat_messages.append(AIMessage(content=message.content))
-                elif message.type == MessageType.SYSTEM:
-                    chat_messages.append(SystemMessage(content=message.content))
-
-            return chat_messages
+            return to_lc_messages(messages)
 
     def _to_model_kwargs_input(self, model_rules: ModelKwargsRules, model_kwargs: ModelKwargs) -> dict:
         """

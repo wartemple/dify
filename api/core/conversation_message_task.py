@@ -1,5 +1,5 @@
-import decimal
 import json
+import time
 from typing import Optional, Union, List
 
 from core.callback_handler.entity.agent_loop import AgentLoop
@@ -23,6 +23,8 @@ class ConversationMessageTask:
     def __init__(self, task_id: str, app: App, app_model_config: AppModelConfig, user: Account,
                  inputs: dict, query: str, streaming: bool, model_instance: BaseLLM,
                  conversation: Optional[Conversation] = None, is_override: bool = False):
+        self.start_at = time.perf_counter()
+
         self.task_id = task_id
 
         self.app = app
@@ -61,6 +63,7 @@ class ConversationMessageTask:
         )
 
     def init(self):
+
         override_model_configs = None
         if self.is_override:
             override_model_configs = self.app_model_config.to_dict()
@@ -91,7 +94,7 @@ class ConversationMessageTask:
         if not self.conversation:
             self.is_new_conversation = True
             self.conversation = Conversation(
-                app_id=self.app_model_config.app_id,
+                app_id=self.app.id,
                 app_model_config_id=self.app_model_config.id,
                 model_provider=self.provider_name,
                 model_id=self.model_name,
@@ -109,10 +112,10 @@ class ConversationMessageTask:
             )
 
             db.session.add(self.conversation)
-            db.session.flush()
+            db.session.commit()
 
         self.message = Message(
-            app_id=self.app_model_config.app_id,
+            app_id=self.app.id,
             model_provider=self.provider_name,
             model_id=self.model_name,
             override_model_configs=json.dumps(override_model_configs) if override_model_configs else None,
@@ -137,7 +140,7 @@ class ConversationMessageTask:
         )
 
         db.session.add(self.message)
-        db.session.flush()
+        db.session.commit()
 
     def append_message_text(self, text: str):
         if text is not None:
@@ -165,7 +168,7 @@ class ConversationMessageTask:
         self.message.answer_tokens = answer_tokens
         self.message.answer_unit_price = answer_unit_price
         self.message.answer_price_unit = answer_price_unit
-        self.message.provider_response_latency = llm_message.latency
+        self.message.provider_response_latency = time.perf_counter() - self.start_at
         self.message.total_price = total_price
 
         db.session.commit()
@@ -188,12 +191,13 @@ class ConversationMessageTask:
         )
 
         db.session.add(message_chain)
-        db.session.flush()
+        db.session.commit()
 
         return message_chain
 
     def on_chain_end(self, message_chain: MessageChain, chain_result: ChainResult):
         message_chain.output = json.dumps(chain_result.completion)
+        db.session.commit()
 
         self._pub_handler.pub_chain(message_chain)
 
@@ -214,24 +218,24 @@ class ConversationMessageTask:
         )
 
         db.session.add(message_agent_thought)
-        db.session.flush()
+        db.session.commit()
 
         self._pub_handler.pub_agent_thought(message_agent_thought)
 
         return message_agent_thought
 
-    def on_agent_end(self, message_agent_thought: MessageAgentThought, agent_model_instant: BaseLLM,
+    def on_agent_end(self, message_agent_thought: MessageAgentThought, agent_model_instance: BaseLLM,
                      agent_loop: AgentLoop):
-        agent_message_unit_price = agent_model_instant.get_tokens_unit_price(MessageType.HUMAN)
-        agent_message_price_unit = agent_model_instant.get_price_unit(MessageType.HUMAN)
-        agent_answer_unit_price = agent_model_instant.get_tokens_unit_price(MessageType.ASSISTANT)
-        agent_answer_price_unit = agent_model_instant.get_price_unit(MessageType.ASSISTANT)
+        agent_message_unit_price = agent_model_instance.get_tokens_unit_price(MessageType.HUMAN)
+        agent_message_price_unit = agent_model_instance.get_price_unit(MessageType.HUMAN)
+        agent_answer_unit_price = agent_model_instance.get_tokens_unit_price(MessageType.ASSISTANT)
+        agent_answer_price_unit = agent_model_instance.get_price_unit(MessageType.ASSISTANT)
 
         loop_message_tokens = agent_loop.prompt_tokens
         loop_answer_tokens = agent_loop.completion_tokens
 
-        loop_message_total_price = agent_model_instant.calc_tokens_price(loop_message_tokens, MessageType.HUMAN)
-        loop_answer_total_price = agent_model_instant.calc_tokens_price(loop_answer_tokens, MessageType.ASSISTANT)
+        loop_message_total_price = agent_model_instance.calc_tokens_price(loop_message_tokens, MessageType.HUMAN)
+        loop_answer_total_price = agent_model_instance.calc_tokens_price(loop_answer_tokens, MessageType.ASSISTANT)
         loop_total_price = loop_message_total_price + loop_answer_total_price
 
         message_agent_thought.observation = agent_loop.tool_output
@@ -245,8 +249,8 @@ class ConversationMessageTask:
         message_agent_thought.latency = agent_loop.latency
         message_agent_thought.tokens = agent_loop.prompt_tokens + agent_loop.completion_tokens
         message_agent_thought.total_price = loop_total_price
-        message_agent_thought.currency = agent_model_instant.get_currency()
-        db.session.flush()
+        message_agent_thought.currency = agent_model_instance.get_currency()
+        db.session.commit()
 
     def on_dataset_query_end(self, dataset_query_obj: DatasetQueryObj):
         dataset_query = DatasetQuery(
@@ -259,6 +263,7 @@ class ConversationMessageTask:
         )
 
         db.session.add(dataset_query)
+        db.session.commit()
 
     def on_dataset_query_finish(self, resource: List):
         if resource and len(resource) > 0:
@@ -282,7 +287,7 @@ class ConversationMessageTask:
                     created_by=self.user.id
                 )
                 db.session.add(dataset_retriever_resource)
-                db.session.flush()
+                db.session.commit()
             self.retriever_resource = resource
 
     def message_end(self):

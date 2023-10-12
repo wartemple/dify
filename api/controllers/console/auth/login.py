@@ -96,15 +96,11 @@ class LoginApi(Resource):
         except Exception:
             pass
 
-        from flask import g
-        flask_login.login_user(account, remember=args['remember_me'])
         AccountService.update_last_login(account, request)
         # todo: return the user info
-        print(g._login_user)
+        token = AccountService.get_account_jwt_token(account)
 
-        current_app.login_manager._load_user()
-        print(g._login_user)
-        return {'result': 'success'}
+        return {'result': 'success', 'data': token}
 
 
 class LogoutApi(Resource):

@@ -12,7 +12,7 @@ from core.callback_handler.agent_loop_gather_callback_handler import AgentLoopGa
 from core.callback_handler.dataset_tool_callback_handler import DatasetToolCallbackHandler
 from core.callback_handler.main_chain_gather_callback_handler import MainChainGatherCallbackHandler
 from core.callback_handler.std_out_callback_handler import DifyStdOutCallbackHandler
-from core.chain.sensitive_word_avoidance_chain import SensitiveWordAvoidanceChain
+from core.chain.sensitive_word_avoidance_chain import SensitiveWordAvoidanceChain, SensitiveWordAvoidanceRule
 from core.conversation_message_task import ConversationMessageTask
 from core.model_providers.error import ProviderTokenNotInitError
 from core.model_providers.model_factory import ModelFactory
@@ -37,12 +37,13 @@ class OrchestratorRuleParser:
 
     def to_agent_executor(self, conversation_message_task: ConversationMessageTask, memory: Optional[BaseChatMemory],
                           rest_tokens: int, chain_callback: MainChainGatherCallbackHandler,
-                          return_resource: bool = False, retriever_from: str = 'dev') -> Optional[AgentExecutor]:
+                          retriever_from: str = 'dev') -> Optional[AgentExecutor]:
         if not self.app_model_config.agent_mode_dict:
             return None
 
         agent_mode_config = self.app_model_config.agent_mode_dict
         model_dict = self.app_model_config.model_dict
+        return_resource = self.app_model_config.retriever_resource_dict.get('enabled', False)
 
         chain = None
         if agent_mode_config and agent_mode_config.get('enabled'):
@@ -63,7 +64,7 @@ class OrchestratorRuleParser:
 
             # add agent callback to record agent thoughts
             agent_callback = AgentLoopGatherCallbackHandler(
-                model_instant=agent_model_instance,
+                model_instance=agent_model_instance,
                 conversation_message_task=conversation_message_task
             )
 
@@ -75,7 +76,7 @@ class OrchestratorRuleParser:
             # only OpenAI chat model (include Azure) support function call, use ReACT instead
             if agent_model_instance.model_mode != ModelMode.CHAT \
                     or agent_model_instance.model_provider.provider_name not in ['openai', 'azure_openai']:
-                if planning_strategy in [PlanningStrategy.FUNCTION_CALL, PlanningStrategy.MULTI_FUNCTION_CALL]:
+                if planning_strategy == PlanningStrategy.FUNCTION_CALL:
                     planning_strategy = PlanningStrategy.REACT
                 elif planning_strategy == PlanningStrategy.ROUTER:
                     planning_strategy = PlanningStrategy.REACT_ROUTER
@@ -123,23 +124,45 @@ class OrchestratorRuleParser:
 
         return chain
 
-    def to_sensitive_word_avoidance_chain(self, callbacks: Callbacks = None, **kwargs) \
+    def to_sensitive_word_avoidance_chain(self, model_instance: BaseLLM, callbacks: Callbacks = None, **kwargs) \
             -> Optional[SensitiveWordAvoidanceChain]:
         """
         Convert app sensitive word avoidance config to chain
 
+        :param model_instance: model instance
+        :param callbacks: callbacks for the chain
         :param kwargs:
         :return:
         """
-        if not self.app_model_config.sensitive_word_avoidance_dict:
-            return None
+        sensitive_word_avoidance_rule = None
 
-        sensitive_word_avoidance_config = self.app_model_config.sensitive_word_avoidance_dict
-        sensitive_words = sensitive_word_avoidance_config.get("words", "")
-        if sensitive_word_avoidance_config.get("enabled", False) and sensitive_words:
+        if self.app_model_config.sensitive_word_avoidance_dict:
+            sensitive_word_avoidance_config = self.app_model_config.sensitive_word_avoidance_dict
+            if sensitive_word_avoidance_config.get("enabled", False):
+                if sensitive_word_avoidance_config.get('type') == 'moderation':
+                    sensitive_word_avoidance_rule = SensitiveWordAvoidanceRule(
+                        type=SensitiveWordAvoidanceRule.Type.MODERATION,
+                        canned_response=sensitive_word_avoidance_config.get("canned_response")
+                        if sensitive_word_avoidance_config.get("canned_response")
+                        else 'Your content violates our usage policy. Please revise and try again.',
+                    )
+                else:
+                    sensitive_words = sensitive_word_avoidance_config.get("words", "")
+                    if sensitive_words:
+                        sensitive_word_avoidance_rule = SensitiveWordAvoidanceRule(
+                            type=SensitiveWordAvoidanceRule.Type.KEYWORDS,
+                            canned_response=sensitive_word_avoidance_config.get("canned_response")
+                            if sensitive_word_avoidance_config.get("canned_response")
+                            else 'Your content violates our usage policy. Please revise and try again.',
+                            extra_params={
+                                'sensitive_words': sensitive_words.split(','),
+                            }
+                        )
+
+        if sensitive_word_avoidance_rule:
             return SensitiveWordAvoidanceChain(
-                sensitive_words=sensitive_words.split(","),
-                canned_response=sensitive_word_avoidance_config.get("canned_response", ''),
+                model_instance=model_instance,
+                sensitive_word_avoidance_rule=sensitive_word_avoidance_rule,
                 output_key="sensitive_word_avoidance_output",
                 callbacks=callbacks,
                 **kwargs
@@ -183,7 +206,10 @@ class OrchestratorRuleParser:
                 tool = self.to_current_datetime_tool()
 
             if tool:
-                tool.callbacks.extend(callbacks)
+                if tool.callbacks is not None:
+                    tool.callbacks.extend(callbacks)
+                else:
+                    tool.callbacks = callbacks
                 tools.append(tool)
 
         return tools
@@ -245,10 +271,9 @@ class OrchestratorRuleParser:
             summary_model_instance = None
 
         tool = WebReaderTool(
-            llm=summary_model_instance.client if summary_model_instance else None,
+            model_instance=summary_model_instance if summary_model_instance else None,
             max_chunk_length=4000,
-            continue_reading=True,
-            callbacks=[DifyStdOutCallbackHandler()]
+            continue_reading=True
         )
 
         return tool
@@ -266,16 +291,13 @@ class OrchestratorRuleParser:
                         "is not up to date. "
                         "Input should be a search query.",
             func=OptimizedSerpAPIWrapper(**func_kwargs).run,
-            args_schema=OptimizedSerpAPIInput,
-            callbacks=[DifyStdOutCallbackHandler()]
+            args_schema=OptimizedSerpAPIInput
         )
 
         return tool
 
     def to_current_datetime_tool(self) -> Optional[BaseTool]:
-        tool = DatetimeTool(
-            callbacks=[DifyStdOutCallbackHandler()]
-        )
+        tool = DatetimeTool()
 
         return tool
 
@@ -286,8 +308,7 @@ class OrchestratorRuleParser:
         return WikipediaQueryRun(
             name="wikipedia",
             api_wrapper=WikipediaAPIWrapper(doc_content_chars_max=4000),
-            args_schema=WikipediaInput,
-            callbacks=[DifyStdOutCallbackHandler()]
+            args_schema=WikipediaInput
         )
 
     @classmethod

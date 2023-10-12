@@ -93,6 +93,7 @@ class AppModelConfig(db.Model):
     more_like_this = db.Column(db.Text)
     model = db.Column(db.Text)
     user_input_form = db.Column(db.Text)
+    dataset_query_variable = db.Column(db.String(255))
     pre_prompt = db.Column(db.Text)
     agent_mode = db.Column(db.Text)
     sensitive_word_avoidance = db.Column(db.Text)
@@ -152,11 +153,12 @@ class AppModelConfig(db.Model):
             "suggested_questions": self.suggested_questions_list,
             "suggested_questions_after_answer": self.suggested_questions_after_answer_dict,
             "speech_to_text": self.speech_to_text_dict,
-            "retriever_resource": self.retriever_resource,
+            "retriever_resource": self.retriever_resource_dict,
             "more_like_this": self.more_like_this_dict,
             "sensitive_word_avoidance": self.sensitive_word_avoidance_dict,
             "model": self.model_dict,
             "user_input_form": self.user_input_form_list,
+            "dataset_query_variable": self.dataset_query_variable,
             "pre_prompt": self.pre_prompt,
             "agent_mode": self.agent_mode_dict
         }
@@ -175,6 +177,7 @@ class AppModelConfig(db.Model):
             if model_config.get('sensitive_word_avoidance') else None
         self.model = json.dumps(model_config['model'])
         self.user_input_form = json.dumps(model_config['user_input_form'])
+        self.dataset_query_variable = model_config.get('dataset_query_variable')
         self.pre_prompt = model_config['pre_prompt']
         self.agent_mode = json.dumps(model_config['agent_mode'])
         self.retriever_resource = json.dumps(model_config['retriever_resource']) \
@@ -196,8 +199,10 @@ class AppModelConfig(db.Model):
             sensitive_word_avoidance=self.sensitive_word_avoidance,
             model=self.model,
             user_input_form=self.user_input_form,
+            dataset_query_variable=self.dataset_query_variable,
             pre_prompt=self.pre_prompt,
-            agent_mode=self.agent_mode
+            agent_mode=self.agent_mode,
+            retriever_resource=self.retriever_resource
         )
 
         return new_app_model_config
@@ -630,12 +635,13 @@ class ApiToken(db.Model):
     __table_args__ = (
         db.PrimaryKeyConstraint('id', name='api_token_pkey'),
         db.Index('api_token_app_id_type_idx', 'app_id', 'type'),
-        db.Index('api_token_token_idx', 'token', 'type')
+        db.Index('api_token_token_idx', 'token', 'type'),
+        db.Index('api_token_tenant_idx', 'tenant_id', 'type')
     )
 
     id = db.Column(UUID, server_default=db.text('uuid_generate_v4()'))
     app_id = db.Column(UUID, nullable=True)
-    dataset_id = db.Column(UUID, nullable=True)
+    tenant_id = db.Column(UUID, nullable=True)
     type = db.Column(db.String(16), nullable=False)
     token = db.Column(db.String(255), nullable=False)
     last_used_at = db.Column(db.DateTime, nullable=True)
@@ -767,25 +773,3 @@ class DatasetRetrieverResource(db.Model):
     created_by = db.Column(UUID, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
 
-
-class AppPromptCases(db.Model):
-    __tablename__ = 'app_prompt_cases'
-    __table_args__ = (
-        db.PrimaryKeyConstraint('id', name='app_prompt_cases_pkey'),
-        db.Index('app_id_idx', 'app_id'),
-    )
-    id = db.Column(UUID, nullable=False, server_default=db.text('uuid_generate_v4()'))
-    app_id = db.Column(UUID, nullable=False)
-    prompt_content = db.Column(db.Text, nullable=False)
-    is_like = db.Column(db.Boolean, nullable=False)
-
-    def load_prompt_to_model_config(self):
-        """加载提示词到 模型配置中 
-        """
-        old_like_prompt = db.session.query(AppPromptCases).filter(AppPromptCases.is_like == True).first()
-        if old_like_prompt:
-            old_like_prompt.is_like = False
-        self.is_like = True
-        app_model_config = db.session.query(AppModelConfig).filter(AppModelConfig.app_id == self.app_id).first()
-        app_model_config.pre_prompt = self.prompt_content
-        db.session.commit()

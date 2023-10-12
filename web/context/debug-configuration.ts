@@ -38,9 +38,8 @@ type IDebugConfiguration = {
   modelConfig: ModelConfig
   setModelConfig: (modelConfig: ModelConfig) => void
   dataSets: DataSet[]
-  setDataSets: (dataSet: DataSet[]) => void,
-  promptCases: PromptCase[],
-  setpromptCases: (promptCases: PromptCase[]) => void
+  setDataSets: (dataSet: DataSet[]) => void
+  hasSetContextVar: boolean
 }
 
 const DebugConfigurationContext = createContext<IDebugConfiguration>({
@@ -106,8 +105,7 @@ const DebugConfigurationContext = createContext<IDebugConfiguration>({
   setModelConfig: () => { },
   dataSets: [],
   setDataSets: () => { },
-  promptCases: [],
-  setpromptCases: () => { },
+  hasSetContextVar: false,
 })
 
 export default DebugConfigurationContext

@@ -2,6 +2,12 @@ from flask_restful import fields
 
 from libs.helper import TimestampField
 
+prompt_case_fields = {
+    "id": fields.String,
+    "content": fields.Raw(attribute='prompt_content'),
+    "is_like": fields.Boolean,
+}
+
 app_detail_kernel_fields = {
     'id': fields.String,
     'name': fields.String,
@@ -118,7 +124,8 @@ app_detail_fields_with_site = {
     'model_config': fields.Nested(model_config_fields, attribute='app_model_config'),
     'site': fields.Nested(site_fields),
     'api_base_url': fields.String,
-    'created_at': TimestampField
+    'created_at': TimestampField,
+    'prompts': fields.Nested(prompt_case_fields, attribute='prompts')
 }
 
 app_site_fields = {

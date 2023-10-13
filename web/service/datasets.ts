@@ -127,9 +127,6 @@ export const unArchiveDocument: Fetcher<CommonResponse, CommonDocReq> = ({ datas
   return patch<CommonResponse>(`/datasets/${datasetId}/documents/${documentId}/status/un_archive`)
 }
 
-export const unArchiveDocument: Fetcher<CommonResponse, CommonDocReq> = ({ datasetId, documentId }) => {
-  return patch(`/datasets/${datasetId}/documents/${documentId}/status/un_archive`) as Promise<CommonResponse>
-}
 
 export const enableDocument: Fetcher<CommonResponse, CommonDocReq> = ({ datasetId, documentId }) => {
   return patch<CommonResponse>(`/datasets/${datasetId}/documents/${documentId}/status/enable`)
@@ -183,18 +180,6 @@ export const segmentBatchImport: Fetcher<{ job_id: string; job_status: string },
 
 export const checkSegmentBatchImportProgress: Fetcher<{ job_id: string; job_status: string }, { jobID: string }> = ({ jobID }) => {
   return get<{ job_id: string; job_status: string }>(`/datasets/batch_import_status/${jobID}`)
-}
-
-export const deleteSegment: Fetcher<CommonResponse, { datasetId: string; documentId: string; segmentId: string }> = ({ datasetId, documentId, segmentId }) => {
-  return del(`/datasets/${datasetId}/documents/${documentId}/segments/${segmentId}`) as Promise<CommonResponse>
-}
-
-export const segmentBatchImport: Fetcher<{ job_id: string; job_status: string }, { url: string; body: FormData }> = ({ url, body }) => {
-  return post(url, { body }, { bodyStringify: false, deleteContentType: true }) as Promise<{ job_id: string; job_status: string }>
-}
-
-export const checkSegmentBatchImportProgress: Fetcher<{ job_id: string; job_status: string }, { jobID: string }> = ({ jobID }) => {
-  return get(`/datasets/batch_import_status/${jobID}`) as Promise<{ job_id: string; job_status: string }>
 }
 
 // hit testing

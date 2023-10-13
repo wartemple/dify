@@ -773,3 +773,25 @@ class DatasetRetrieverResource(db.Model):
     created_by = db.Column(UUID, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
 
+
+class AppPromptCases(db.Model):
+    __tablename__ = 'app_prompt_cases'
+    __table_args__ = (
+        db.PrimaryKeyConstraint('id', name='app_prompt_cases_pkey'),
+        db.Index('app_id_idx', 'app_id'),
+    )
+    id = db.Column(UUID, nullable=False, server_default=db.text('uuid_generate_v4()'))
+    app_id = db.Column(UUID, nullable=False)
+    prompt_content = db.Column(db.Text, nullable=False)
+    is_like = db.Column(db.Boolean, nullable=False)
+
+    def load_prompt_to_model_config(self):
+        """加载提示词到 模型配置中 
+        """
+        old_like_prompt = db.session.query(AppPromptCases).filter(AppPromptCases.is_like == True).first()
+        if old_like_prompt:
+            old_like_prompt.is_like = False
+        self.is_like = True
+        app_model_config = db.session.query(AppModelConfig).filter(AppModelConfig.app_id == self.app_id).first()
+        app_model_config.pre_prompt = self.prompt_content
+        db.session.commit()

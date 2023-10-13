@@ -200,11 +200,3 @@ export const fetchNotionConnection: Fetcher<{ data: string }, string> = (url) =>
 export const fetchDataSourceNotionBinding: Fetcher<{ result: string }, string> = (url) => {
   return get(url) as Promise<{ result: string }>
 }
-
-export const fetchFileUploadConfig: Fetcher<FileUploadConfigResponse, { url: string }> = ({ url }) => {
-  return get(url) as Promise<FileUploadConfigResponse>
-}
-
-export const fetchDocumentsLimit: Fetcher<DocumentsLimitResponse, string> = (url) => {
-  return get(url) as Promise<DocumentsLimitResponse>
-}

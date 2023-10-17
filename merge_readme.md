@@ -1,5 +1,12 @@
 # 合并最新流程
-## api合并流程
+### 合并流程
+```
+- 先到github拉取最新的代码到自身项目
+- 本地拉取最新代码 main 
+- 切换到bob分支后 git merge main
+- 解决合并冲突
+```
+
 ### 问题 db migrate merge(新建的表【prompt Cases 未生效】)
 ```
 如果 flask db upgrade error:
@@ -26,3 +33,5 @@ web/i18n/index.tx defaultLocale为zh-Hans
 - 新增内部大模型模型提供商bob（chatglm2）
 - 新增提示词实验室页面及其功能（前后端）
 - 统一登录修改（前端默认跳转）（后端中间件自动注册用户）[未开发]
+
+

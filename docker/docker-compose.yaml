@@ -2,7 +2,7 @@ version: '3.1'
 services:
   # API service
   api:
-    image: langgenius/dify-api:0.3.26
+    image: ${API_IMAGE}
     restart: always
     environment:
       # Startup mode, 'api' starts the API server.
@@ -124,7 +124,7 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    image: langgenius/dify-api:0.3.26
+    image: ${API_IMAGE}
     restart: always
     environment:
       # Startup mode, 'worker' starts the Celery worker for processing the queue.
@@ -192,7 +192,7 @@ services:
 
   # Frontend web application.
   web:
-    image: langgenius/dify-web:0.3.26
+    image: ${WEB_IMAGE}
     restart: always
     environment:
       EDITION: SELF_HOSTED
@@ -203,7 +203,7 @@ services:
       # The URL for Web APP api server, refers to the Web App base URL of WEB service if web app domain is different from
       # console or api domain.
       # example: http://udify.app
-      APP_API_URL: ''
+      APP_API_URL: 'https://prompt.bobfintech.com.cn/'
       # The DSN for Sentry error reporting. If not set, Sentry error reporting will be disabled.
       SENTRY_DSN: ''
 #    uncomment to expose dify-web port to host

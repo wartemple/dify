@@ -6,7 +6,7 @@ import { useContext } from 'use-context-selector'
 import {
   PlayIcon,
 } from '@heroicons/react/24/solid'
-// import VarIcon from '../base/icons/var-icon'
+import { BracketsX as VarIcon } from '@/app/components/base/icons/src/vender/line/development'
 import ConfigContext from '@/context/debug-configuration'
 import type { PromptVariable } from '@/models/debug'
 import { AppType } from '@/types/app'
@@ -83,16 +83,55 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
     setInputs(newInputs)
   }
 
+  const promptPreview = (
+    <div className='py-3 rounded-t-xl bg-indigo-25'>
+      <div className="px-4">
+        <div className="flex items-center space-x-1 cursor-pointer" onClick={() => setPromptPreviewCollapse(!promptPreviewCollapse)}>
+          {starIcon}
+          <div className="text-xs font-medium text-indigo-600 uppercase">{t('appDebug.inputs.previewTitle')}</div>
+          {
+            promptPreviewCollapse
+              ? <ChevronRight className='w-3 h-3 text-gray-700' />
+              : <ChevronDown className='w-3 h-3 text-gray-700' />
+          }
+        </div>
+        {
+          !promptPreviewCollapse && (
+            <div className='mt-2  leading-normal'>
+              {
+                (promptTemplate && promptTemplate?.trim())
+                  ? (
+                    <div
+                      className="max-h-48 overflow-y-auto text-sm text-gray-700 break-all"
+                      dangerouslySetInnerHTML={{
+                        __html: format(replaceStringWithValuesWithFormat(promptTemplate.replace(/</g, '&lt;').replace(/>/g, '&gt;'), promptVariables, inputs)),
+                      }}
+                    >
+                    </div>
+                  )
+                  : (
+                    <div className='text-xs text-gray-500'>{t('appDebug.inputs.noPrompt')}</div>
+                  )
+              }
+            </div>
+          )
+        }
+      </div>
+    </div>
+  )
+
   return (
     <div className="pb-3 border border-gray-200 bg-white rounded-xl" style={{
       boxShadow: '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
     }}>
+      {/* {promptPreview} */}
+
       <div className={'mt-3 px-4 bg-white'}>
         <div className={
           `${!userInputFieldCollapse && 'mb-2'}`
         }>
           <div className='flex items-center space-x-1 cursor-pointer' onClick={() => setUserInputFieldCollapse(!userInputFieldCollapse)}>
-            {/* <div className='flex items-center justify-center w-4 h-4'><VarIcon /></div> */}
+            <div className='flex items-center justify-center w-4 h-4'><VarIcon className='w-4 h-4 text-primary-500'/></div>
             <div className='text-xs font-medium text-gray-800'>{t('appDebug.inputs.userInputField')}</div>
             {
               userInputFieldCollapse
@@ -138,7 +177,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
                           <textarea
                             className="w-full px-3 text-sm leading-9 text-gray-900 border-0 rounded-lg grow h-[120px] bg-gray-50 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-gray-200"
                             placeholder={`${name}${!required ? `(${t('appDebug.variableTable.optional')})` : ''}`}
-                            value={inputs[key] ? `${inputs[key]}` : ''}
+                            defaultValue={inputs[key] ? `${inputs[key]}` : ''}
                             onChange={(e) => { handleInputValueChange(key, e.target.value) }}
                           />
                         )}

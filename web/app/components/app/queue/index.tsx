@@ -196,6 +196,7 @@ const PromptLab: FC = () => {
           item.model_config = {
             pre_prompt: item.content,
             user_input_form: modelConfig.user_input_form,
+            dataset_query_variable: '',
             opening_statement: introduction,
             suggested_questions_after_answer: suggestedQuestionsAfterAnswerConfig,
             speech_to_text: speechToTextConfig,

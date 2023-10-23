@@ -715,6 +715,33 @@ def migrate_default_input_to_dataset_query_variable(batch_size):
             pbar.update(len(data_batch))
 
 
+@click.command('migrate_update_custom_model_config')
+def migrate_update_custom_model_config():
+    import os
+    from core.model_providers.providers.base import CredentialsValidateFailedError
+    from services.provider_service import ProviderService
+    provider_service = ProviderService()
+    engines = [
+        {"provider_name": "chatglm", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.16.6.32:7777/api/v1/chatglm/message')}},
+        {"provider_name": "openai", "config": {
+            "openai_api_base": "",
+            "openai_api_key": "test",
+            "openai_organization": ""}},
+        {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.16.6.32:7777/api/v1/baichuan/message')}},
+        {"provider_name": "bobfintech", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.16.6.32:7777/api/v1/chatglm/message')}}
+    ]
+    for account in Account.query.all():
+        for engine in engines:
+            try:
+                provider_service.save_custom_provider_config(
+                    tenant_id=account.current_tenant_id,
+                    provider_name=engine['provider_name'],
+                    config=engine['config']
+                )
+            except CredentialsValidateFailedError as ex:
+                raise ValueError(str(ex))
+
+
 def register_commands(app):
     app.cli.add_command(reset_password)
     app.cli.add_command(reset_email)
@@ -728,3 +755,4 @@ def register_commands(app):
     app.cli.add_command(update_app_model_configs)
     app.cli.add_command(normalization_collections)
     app.cli.add_command(migrate_default_input_to_dataset_query_variable)
+    app.cli.add_command(migrate_update_custom_model_config)

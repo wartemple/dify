@@ -54,7 +54,6 @@ class BOBFinTechAIModel(BaseLLM):
                 setattr(self.client, k, v)
 
     def handle_exceptions(self, ex: Exception) -> Exception:
-        print(ex)
         return LLMBadRequestError(f"BOB FinTech AI: {str(ex)}")
 
     @property

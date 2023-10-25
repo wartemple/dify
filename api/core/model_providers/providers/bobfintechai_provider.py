@@ -10,8 +10,7 @@ from core.model_providers.models.entity.model_params import ModelKwargsRules, Kw
 from core.model_providers.models.llm.bob_fintech_ai_model import BOBFinTechAIModel
 from core.model_providers.providers.base import BaseModelProvider, CredentialsValidateFailedError
 from core.third_party.langchain.llms.bob_fintech_ai import BOBFinTechChatLLM
-from models.provider import ProviderType, ProviderQuotaType
-
+from core.model_providers.models.embedding.bobfintechai_embedding import BobFinTechAIEmbedding
 
 class BOBFinTechAIProvider(BaseModelProvider):
 
@@ -49,8 +48,8 @@ class BOBFinTechAIProvider(BaseModelProvider):
         """
         if model_type == ModelType.TEXT_GENERATION:
             model_class = BOBFinTechAIModel
-        # elif model_type == ModelType.EMBEDDINGS:
-        #     model_class = ZhipuAIEmbedding
+        elif model_type == ModelType.EMBEDDINGS:
+            model_class = BobFinTechAIEmbedding
         else:
             raise NotImplementedError
 

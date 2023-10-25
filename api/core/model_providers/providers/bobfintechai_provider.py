@@ -2,31 +2,39 @@ import json
 from json import JSONDecodeError
 from typing import Type
 
-from langchain.llms import ChatGLM
+from langchain.schema import HumanMessage
 
 from core.helper import encrypter
 from core.model_providers.models.base import BaseProviderModel
 from core.model_providers.models.entity.model_params import ModelKwargsRules, KwargRule, ModelType
-from core.model_providers.models.llm.chatglm_model import ChatGLMModel
+from core.model_providers.models.llm.bob_fintech_ai_model import BOBFinTechAIModel
 from core.model_providers.providers.base import BaseModelProvider, CredentialsValidateFailedError
-from models.provider import ProviderType
+from core.third_party.langchain.llms.bob_fintech_ai import BOBFinTechChatLLM
+from models.provider import ProviderType, ProviderQuotaType
 
 
-class BobfintechProvider(BaseModelProvider):
+class BOBFinTechAIProvider(BaseModelProvider):
 
     @property
     def provider_name(self):
         """
         Returns the name of a provider.
         """
-        return 'bobfintech'
+        return 'bobfintechai'
 
     def _get_fixed_model_list(self, model_type: ModelType) -> list[dict]:
         if model_type == ModelType.TEXT_GENERATION:
             return [
                 {
-                    'id': 'bobfintech-7b',
-                    'name': '北银金科-7B',
+                    'id': 'bobfintechai',
+                    'name': 'bobfintechai',
+                }
+            ]
+        elif model_type == ModelType.EMBEDDINGS:
+            return [
+                {
+                    'id': 'text_embedding',
+                    'name': 'text_embedding',
                 }
             ]
         else:
@@ -40,7 +48,9 @@ class BobfintechProvider(BaseModelProvider):
         :return:
         """
         if model_type == ModelType.TEXT_GENERATION:
-            model_class = ChatGLMModel
+            model_class = BOBFinTechAIModel
+        # elif model_type == ModelType.EMBEDDINGS:
+        #     model_class = ZhipuAIEmbedding
         else:
             raise NotImplementedError
 
@@ -54,17 +64,12 @@ class BobfintechProvider(BaseModelProvider):
         :param model_type:
         :return:
         """
-        model_max_tokens = {
-            'chatglm-6b': 2000,
-            'chatglm2-6b': 32000,
-        }
-
         return ModelKwargsRules(
-            temperature=KwargRule[float](min=0, max=2, default=1),
-            top_p=KwargRule[float](min=0, max=1, default=0.7),
+            temperature=KwargRule[float](min=0.01, max=1, default=0.95, precision=2),
+            top_p=KwargRule[float](min=0.1, max=0.9, default=0.8, precision=1),
             presence_penalty=KwargRule[float](enabled=False),
             frequency_penalty=KwargRule[float](enabled=False),
-            max_tokens=KwargRule[int](alias='max_token', min=10, max=model_max_tokens.get(model_name), default=2048),
+            max_tokens=KwargRule[int](enabled=False),
         )
 
     @classmethod
@@ -72,49 +77,24 @@ class BobfintechProvider(BaseModelProvider):
         """
         Validates the given credentials.
         """
-        if 'api_base' not in credentials:
-            raise CredentialsValidateFailedError('ChatGLM Endpoint URL must be provided.')
-
         try:
-            credential_kwargs = {
-                'endpoint_url': credentials['api_base']
-            }
-
-            llm = ChatGLM(
-                max_token=10,
-                **credential_kwargs
+            llm = BOBFinTechChatLLM(
+                temperature=0.01,
             )
 
-            llm("ping")
+            llm([HumanMessage(content='ping')])
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     @classmethod
     def encrypt_provider_credentials(cls, tenant_id: str, credentials: dict) -> dict:
-        credentials['api_base'] = encrypter.encrypt_token(tenant_id, credentials['api_base'])
         return credentials
 
     def get_provider_credentials(self, obfuscated: bool = False) -> dict:
-        if self.provider.provider_type == ProviderType.CUSTOM.value:
-            try:
-                credentials = json.loads(self.provider.encrypted_config)
-            except JSONDecodeError:
-                credentials = {
-                    'api_base': None
-                }
-
-            if credentials['api_base']:
-                credentials['api_base'] = encrypter.decrypt_token(
-                    self.provider.tenant_id,
-                    credentials['api_base']
-                )
-
-                if obfuscated:
-                    credentials['api_base'] = encrypter.obfuscated_token(credentials['api_base'])
-
-            return credentials
-
         return {}
+
+    def should_deduct_quota(self):
+        return True
 
     @classmethod
     def is_model_credentials_valid_or_raise(cls, model_name: str, model_type: ModelType, credentials: dict):

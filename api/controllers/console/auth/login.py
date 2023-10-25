@@ -9,42 +9,13 @@ from flask import current_app, request
 from flask_restful import Resource, reqparse
 from libs.helper import email
 from libs.password import valid_password
-from models.account import Account, TenantAccountJoin
+from models.account import Account
 from services.account_service import (AccountService, RegisterService,
                                       TenantService)
 
 
 class RegisterApi(Resource):
     """Resource for user login."""
-
-    def _init_engine(self, account):
-        import os
-
-        from core.model_providers.providers.base import CredentialsValidateFailedError
-        from services.provider_service import ProviderService
-
-        tenant_account_join = TenantAccountJoin.query.filter_by(account_id=account.id).first()
-        account.current_tenant_id = tenant_account_join.tenant_id
-        provider_service = ProviderService()
-        engines = [
-            {"provider_name": "chatglm", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.17.6.32:7777/api/v1/chatglm/message')}},
-            {"provider_name": "openai", "config": {
-                "openai_api_base": "",
-                "openai_api_key": "test",
-                "openai_organization": ""}},
-            {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.17.6.32:7777/api/v1/baichuan/message')}},
-            {"provider_name": "bobfintech", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.17.6.32:7777/api/v1/chatglm/message')}}
-        ]
-        for engine in engines:
-            try:
-                provider_service.save_custom_provider_config(
-                    tenant_id=account.current_tenant_id,
-                    provider_name=engine['provider_name'],
-                    config=engine['config']
-                )
-            except CredentialsValidateFailedError as ex:
-                raise ValueError(str(ex))
-    
 
     @setup_required
     def post(self):
@@ -62,11 +33,11 @@ class RegisterApi(Resource):
                 email=args['email'],
                 name=args['name'],
                 password=args['password'],
+                open_id=args['email'],
+                provider='bobfintechai'
             )
             account.interface_language = 'zh-Hans'
             db.session.commit()
-        # TODO: 为用户添加默认的glm引擎
-        # self._init_engine(account)
         return {'result': 'success'}
 
 

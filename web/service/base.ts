@@ -255,13 +255,13 @@ const baseFetch = <T>(
                         })
                       }
                       else {
-                        // globalThis.location.href = loginUrl
+                        globalThis.location.href = loginUrl
                       }
                     }
                   })
                   return Promise.reject(Error('Unauthorized'))
                 }
-                // globalThis.location.href = loginUrl
+                globalThis.location.href = loginUrl
                 break
               }
               case 403:

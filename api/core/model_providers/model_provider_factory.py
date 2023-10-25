@@ -54,9 +54,9 @@ class ModelProviderFactory:
         elif provider_name == 'baichuan':
             from core.model_providers.providers.baichuan_provider import BaichuanProvider
             return BaichuanProvider
-        elif provider_name == 'bobfintech':
-            from core.model_providers.providers.bobfintech_provider import BobfintechProvider
-            return BobfintechProvider
+        elif provider_name == 'bobfintechai':
+            from core.model_providers.providers.bobfintechai_provider import BOBFinTechAIProvider
+            return BOBFinTechAIProvider
         elif provider_name == 'azure_openai':
             from core.model_providers.providers.azure_openai_provider import AzureOpenAIProvider
             return AzureOpenAIProvider
@@ -235,7 +235,7 @@ class ModelProviderFactory:
                         tenant_id=tenant_id,
                         provider_name=model_provider_name,
                         provider_type=ProviderType.CUSTOM.value,
-                        is_valid=False
+                        is_valid=(model_provider_name == 'bobfintechai')
                     )
                     db.session.add(provider)
                     db.session.commit()

@@ -1,6 +1,6 @@
 """Wrapper around OpenLLM embedding models."""
 from typing import Any, List, Optional
-
+import os
 import requests
 from pydantic import BaseModel, Extra
 
@@ -39,7 +39,8 @@ class BOBFinTechAIEmbeddings(BaseModel, Embeddings):
 
     def invoke_embedding(self, text):
         headers = {"Content-Type": "application/json"}
-        response = requests.post('https://ai.bobfintech.com.cn/emb-api/api/v1/text2vec/base-chinese',
+        url = os.getenv('BOBFINTECH_EMBEDDING_URL', 'https://ai.bobfintech.com.cn/emb-api/api/v1/text2vec/base-chinese')
+        response = requests.post(url,
             headers=headers,
             json={"text": text}
         )

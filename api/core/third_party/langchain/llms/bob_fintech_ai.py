@@ -1,10 +1,8 @@
 """Wrapper around BOBFintech APIs."""
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
-import time
 from typing import (
     Any,
     Dict,
@@ -22,14 +20,13 @@ from pydantic import Extra, root_validator, BaseModel
 from langchain.callbacks.manager import (
     CallbackManagerForLLMRun,
 )
-from langchain.utils import get_from_dict_or_env
 
 logger = logging.getLogger(__name__)
 import os
 
 
 class BOBFinTechModelAPI(BaseModel):
-    base_url: str = os.getenv('BOBFINTECH_AI_URL', 'https://ai.bobfintech.com.cn/llm-api/api/v1/chat/completions')
+    base_url: str = os.getenv('BOBFINTECH_LLM_URL', 'https://ai.bobfintech.com.cn/llm-api/api/v1/chat/completions')
 
     class Config:
         """Configuration for this pydantic object."""

@@ -207,6 +207,7 @@ export type PromptCase = {
   content: string
   is_like: boolean
   result: string
+  loading: boolean
   model_config: ModelConfig
 }
 /**

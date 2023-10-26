@@ -193,6 +193,7 @@ const PromptLab: FC = () => {
       if (Array.isArray(res.prompts)) {
         const initPromptCase: PromptCase[]  = res.prompts.map(item => {
           item.result = ''
+          item.loading = false
           item.model_config = {
             pre_prompt: item.content,
             user_input_form: modelConfig.user_input_form,
@@ -220,6 +221,7 @@ const PromptLab: FC = () => {
       const newPromptCase: PromptCase = {
         id: res.id,
         content: res.content,
+        loading: false,
         is_like: res.is_like,
         result: '',
         model_config: {
@@ -296,13 +298,13 @@ const PromptLab: FC = () => {
       return
     setResponsingTrue()
     
-    promptCases.map((item) => {
+    const newPC = promptCases.map((item) => {
       const res: string[] = []
       const data = {
         inputs,
         model_config: item.model_config,
       }
-      const result = sendCompletionMessage(appId, data, {
+      sendCompletionMessage(appId, data, {
         onData: (data: string) => {
           res.push(data)
           item.result = res.join('')
@@ -311,6 +313,7 @@ const PromptLab: FC = () => {
           const newPromptCases = promptCases.map((prompt) => {
             if (prompt.id === item.id) {
               prompt.result = item.result
+              prompt.loading = false
               return prompt
             } else {
               return prompt
@@ -322,10 +325,11 @@ const PromptLab: FC = () => {
           setResponsingFalse()
         },
       })
-      console.log(result)
+      item.loading = true
+      return item
     })
     setResponsingFalse()
-    setpromptCases(promptCases)
+    setpromptCases(newPC)
   }
   
   return (

@@ -37,12 +37,13 @@ const AppDetailLayout: FC<IAppDetailLayoutProps> = (props) => {
   const { isCurrentWorkspaceManager } = useAppContext()
   const detailParams = { url: '/apps', id: appId }
   const { data: response } = useSWR(detailParams, fetchAppDetail)
+  const isCompletion = response?.mode?.toUpperCase() === 'COMPLETION'
 
   const navigation = useMemo(() => {
     const navs = [
       { name: t('common.appMenus.overview'), href: `/app/${appId}/overview`, icon: ChartBarSquareIcon, selectedIcon: ChartBarSquareSolidIcon },
       isCurrentWorkspaceManager ? { name: t('common.appMenus.promptEng'), href: `/app/${appId}/configuration`, icon: Cog8ToothIcon, selectedIcon: Cog8ToothSolidIcon } : false,
-      { name: '提示词试验室', href: `/app/${appId}/queue`, icon: QueueListIcon, selectedIcon: QueueListSolidIcon },
+      isCompletion ? { name: '提示词试验室', href: `/app/${appId}/queue`, icon: QueueListIcon, selectedIcon: QueueListSolidIcon }: false,
       { name: t('common.appMenus.apiAccess'), href: `/app/${appId}/develop`, icon: CommandLineIcon, selectedIcon: CommandLineSolidIcon },
       { name: t('common.appMenus.logAndAnn'), href: `/app/${appId}/logs`, icon: DocumentTextIcon, selectedIcon: DocumentTextSolidIcon },
     ].filter(nav => !!nav)

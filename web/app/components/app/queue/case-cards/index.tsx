@@ -19,6 +19,7 @@ import type { PromptVariable } from '@/models/debug'
 import { AppType } from '@/types/app'
 import { useProviderContext } from '@/context/provider-context'
 import Output from '@/app/components/app/queue/output'
+import Loading from '@/app/components/base/loading'
 import {
   PlusIcon, ChevronDoubleRightIcon
 } from '@heroicons/react/24/solid'
@@ -83,7 +84,6 @@ const PromptCaseCards = () => {
   }
 
   const runCompletion = async (clickCase) => {
-    console.log(clickCase)
     if (isResponsing) {
       notify({ type: 'info', message: t('appDebug.errorMessage.waitForResponse') })
       return false
@@ -102,10 +102,10 @@ const PromptCaseCards = () => {
         clickCase.result = res.join('')
       },
       onCompleted() {
-        console.log(clickCase)
         const newPromptCases = promptCases.map((item) => {
           if (item.id === clickCase.id) {
             item.result = clickCase.result
+            item.loading = false
             return item
           } else {
             return item
@@ -116,6 +116,15 @@ const PromptCaseCards = () => {
       },
       onError() {},
     })
+    const newPromptCases = promptCases.map((item) => {
+      if (item.id === clickCase.id) {
+        item.loading = true
+        return item
+      } else {
+        return item
+      }
+    })
+    setpromptCases(newPromptCases)
   }
 
   const publishButtonClassname = (isLike: boolean) => {
@@ -163,8 +172,12 @@ const PromptCaseCards = () => {
               <div className='block-input w-full overflow-y-auto border-none rounded-lg'>
                 <div className='h-[240px]  overflow-y-auto'>
                   <div className='h-full px-4 py-1'>
-                    <textarea value={item.result? item.result : ''} readOnly className=' focus:outline-none bg-transparent text-sm block w-full h-full absolut3e resize-none'>
-                    </textarea>
+                    {item.loading ? (
+                        <div className='flex items-center h-10'><Loading type='area' /></div>
+                      ):(
+                      <textarea value={item.result? item.result : ''} readOnly className=' focus:outline-none bg-transparent text-sm block w-full h-full absolut3e resize-none'>
+                      </textarea>)
+                    }
                   </div>
                 </div>
               </div>

@@ -742,6 +742,12 @@ def migrate_update_custom_model_config():
                 raise ValueError(str(ex))
 
 
+@click.command('delete_all_provider')
+def delete_all_provider():
+    db.session.query(Provider).delete()
+
+
+
 def register_commands(app):
     app.cli.add_command(reset_password)
     app.cli.add_command(reset_email)
@@ -756,3 +762,4 @@ def register_commands(app):
     app.cli.add_command(normalization_collections)
     app.cli.add_command(migrate_default_input_to_dataset_query_variable)
     app.cli.add_command(migrate_update_custom_model_config)
+    app.cli.add_command(delete_all_provider)

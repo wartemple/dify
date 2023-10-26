@@ -744,7 +744,11 @@ def migrate_update_custom_model_config():
 
 @click.command('delete_all_provider')
 def delete_all_provider():
+    from models.provider import TenantDefaultModel
+
     db.session.query(Provider).delete()
+    db.session.query(TenantDefaultModel).delete()
+    db.session.commit()
 
 
 

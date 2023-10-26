@@ -3,10 +3,14 @@ services:
   # API service
   api:
     image: ${API_IMAGE}
+    security_opt:
+      - "seccomp:unconfined"
     restart: always
     environment:
       # Startup mode, 'api' starts the API server.
       MODE: api
+      BOBFINTECH_LLM_URL: ${BOBFINTECH_LLM_URL}
+      BOBFINTECH_EMBEDDING_URL: ${BOBFINTECH_EMBEDDING_URL}
       # The log level for the application. Supported values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
       LOG_LEVEL: INFO
       # A secret key that is used for securely signing the session cookie and encrypting sensitive information on the database. You can generate a strong key using `openssl rand -base64 42`.
@@ -125,10 +129,14 @@ services:
   # The Celery worker for processing the queue.
   worker:
     image: ${API_IMAGE}
+    security_opt:
+      - "seccomp:unconfined"
     restart: always
     environment:
       # Startup mode, 'worker' starts the Celery worker for processing the queue.
       MODE: worker
+      BOBFINTECH_LLM_URL: ${BOBFINTECH_LLM_URL}
+      BOBFINTECH_EMBEDDING_URL: ${BOBFINTECH_EMBEDDING_URL}
 
       # --- All the configurations below are the same as those in the 'api' service. ---
 

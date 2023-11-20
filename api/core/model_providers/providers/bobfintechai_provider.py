@@ -27,6 +27,10 @@ class BOBFinTechAIProvider(BaseModelProvider):
                 {
                     'id': 'bobfintechai',
                     'name': 'bobfintechai',
+                },
+                {
+                    'id': 'bobfintechai-v2',
+                    'name': 'bobfintechai-v2',
                 }
             ]
         elif model_type == ModelType.EMBEDDINGS:

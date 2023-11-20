@@ -722,11 +722,6 @@ def migrate_update_custom_model_config():
     from services.provider_service import ProviderService
     provider_service = ProviderService()
     engines = [
-        {"provider_name": "chatglm", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.16.6.32:7777/api/v1/chatglm/message')}},
-        {"provider_name": "openai", "config": {
-            "openai_api_base": "",
-            "openai_api_key": "test",
-            "openai_organization": ""}},
         {"provider_name": "baichuan", "config": {"api_base": os.getenv('BAICHUAN_URL', 'http://172.16.6.32:7777/api/v1/baichuan/message')}},
         {"provider_name": "bobfintech", "config": {"api_base": os.getenv('ChatGLM_URL', 'http://172.16.6.32:7777/api/v1/chatglm/message')}}
     ]

@@ -35,8 +35,7 @@ class BOBFinTechModelAPI(BaseModel):
 
     def do_request(self, model: str, query: str, parameters: dict, **kwargs: Any):
         stream = 'stream' in kwargs and kwargs['stream']
-
-        url = self.base_url
+        url = kwargs.get('base_url', self.base_url) if 'base_url' in kwargs else self.base_url
 
         data = {
             "model": model,
@@ -112,7 +111,7 @@ class BOBFinTechChatLLM(BaseChatModel):
     @property
     def _llm_type(self) -> str:
         """Return type of llm."""
-        return "baichuan"
+        return self.model
 
     def _convert_message_to_dict(self, message: BaseMessage) -> dict:
         if isinstance(message, ChatMessage):
@@ -198,7 +197,6 @@ class BOBFinTechChatLLM(BaseChatModel):
         params = self._default_params
         params["query"] = messages[0].content
         params.update(kwargs)
-
         for event in self.client.do_request(stream=True, **params).iter_lines():
             if event:
                 event = event.decode("utf-8").replace("data: ", "")

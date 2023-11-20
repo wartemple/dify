@@ -750,6 +750,19 @@ def delete_all_provider():
     db.session.query(TenantDefaultModel).delete()
     db.session.commit()
 
+@click.command('reset_password')
+@click.option("--email", default='', help="账号名称")
+def reset_password(email):
+    account = db.session.query(Account).filter(Account.email == email).first()
+    salt = secrets.token_bytes(16)
+    base64_salt = base64.b64encode(salt).decode()
+
+    # encrypt password with salt
+    password_hashed = hash_password('P@ssw0rd123456', salt)
+    base64_password_hashed = base64.b64encode(password_hashed).decode()
+    account.password = base64_password_hashed
+    account.password_salt = base64_salt
+    db.session.commit()
 
 
 def register_commands(app):

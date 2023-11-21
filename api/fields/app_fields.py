@@ -29,11 +29,17 @@ model_config_fields = {
     'retriever_resource': fields.Raw(attribute='retriever_resource_dict'),
     'more_like_this': fields.Raw(attribute='more_like_this_dict'),
     'sensitive_word_avoidance': fields.Raw(attribute='sensitive_word_avoidance_dict'),
+    'external_data_tools': fields.Raw(attribute='external_data_tools_list'),
     'model': fields.Raw(attribute='model_dict'),
     'user_input_form': fields.Raw(attribute='user_input_form_list'),
     'dataset_query_variable': fields.String,
     'pre_prompt': fields.String,
     'agent_mode': fields.Raw(attribute='agent_mode_dict'),
+    'prompt_type': fields.String,
+    'chat_prompt_config': fields.Raw(attribute='chat_prompt_config_dict'),
+    'completion_prompt_config': fields.Raw(attribute='completion_prompt_config_dict'),
+    'dataset_configs': fields.Raw(attribute='dataset_configs_dict'),
+    'file_upload': fields.Raw(attribute='file_upload_dict'),
 }
 
 app_detail_fields = {

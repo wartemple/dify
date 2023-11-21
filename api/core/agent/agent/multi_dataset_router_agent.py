@@ -14,7 +14,6 @@ from pydantic import root_validator
 from core.model_providers.models.entity.message import to_prompt_messages
 from core.model_providers.models.llm.base import BaseLLM
 from core.third_party.langchain.llms.fake import FakeLLM
-from core.tool.dataset_retriever_tool import DatasetRetrieverTool
 
 
 class MultiDatasetRouterAgent(OpenAIFunctionsAgent):
@@ -60,7 +59,6 @@ class MultiDatasetRouterAgent(OpenAIFunctionsAgent):
             return AgentFinish(return_values={"output": ''}, log='')
         elif len(self.tools) == 1:
             tool = next(iter(self.tools))
-            tool = cast(DatasetRetrieverTool, tool)
             rst = tool.run(tool_input={'query': kwargs['input']})
             # output = ''
             # rst_json = json.loads(rst)
@@ -76,9 +74,11 @@ class MultiDatasetRouterAgent(OpenAIFunctionsAgent):
             agent_decision = self.real_plan(intermediate_steps, callbacks, **kwargs)
             if isinstance(agent_decision, AgentAction):
                 tool_inputs = agent_decision.tool_input
-                if isinstance(tool_inputs, dict) and 'query' in tool_inputs:
+                if isinstance(tool_inputs, dict) and 'query' in tool_inputs and 'chat_history' not in kwargs:
                     tool_inputs['query'] = kwargs['input']
                     agent_decision.tool_input = tool_inputs
+            else:
+                agent_decision.return_values['output'] = ''
             return agent_decision
         except Exception as e:
             new_exception = self.model_instance.handle_exceptions(e)

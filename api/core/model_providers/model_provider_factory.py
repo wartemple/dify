@@ -75,6 +75,9 @@ class ModelProviderFactory:
         elif provider_name == 'localai':
             from core.model_providers.providers.localai_provider import LocalAIProvider
             return LocalAIProvider
+        elif provider_name == 'cohere':
+            from core.model_providers.providers.cohere_provider import CohereProvider
+            return CohereProvider
         else:
             raise NotImplementedError
 
@@ -213,6 +216,9 @@ class ModelProviderFactory:
                                 Provider.provider_type == ProviderType.SYSTEM.value,
                                 Provider.quota_type == ProviderQuotaType.TRIAL.value
                             ).first()
+
+                        if provider.quota_limit == 0:
+                            return None
 
                         return provider
 

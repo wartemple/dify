@@ -4,7 +4,6 @@ import { Fragment, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useContext } from 'use-context-selector'
 import { Menu, Transition } from '@headlessui/react'
-import AccountSetting from '../account-setting'
 import AccountAbout from '../account-about'
 import WorkplaceSelector from './workplace-selector'
 import I18n from '@/context/i18n'
@@ -13,6 +12,7 @@ import { logout } from '@/service/common'
 import { useAppContext } from '@/context/app-context'
 import { ChevronDown } from '@/app/components/base/icons/src/vender/line/arrows'
 import { LogOut01 } from '@/app/components/base/icons/src/vender/line/general'
+import { useModalContext } from '@/context/modal-context'
 
 export default function AppSelector() {
   const itemClassName = `
@@ -20,12 +20,12 @@ export default function AppSelector() {
     rounded-lg font-normal hover:bg-gray-50 cursor-pointer
   `
   const router = useRouter()
-  const [settingVisible, setSettingVisible] = useState(false)
   const [aboutVisible, setAboutVisible] = useState(false)
 
   const { locale } = useContext(I18n)
   const { t } = useTranslation()
   const { userProfile, langeniusVersionInfo } = useAppContext()
+  const { setShowAccountSettingModal } = useModalContext()
 
   const handleLogout = async () => {
     await logout({
@@ -91,7 +91,7 @@ export default function AppSelector() {
                   </div>
                   <div className="px-1 py-1">
                     <Menu.Item>
-                      <div className={itemClassName} onClick={() => setSettingVisible(true)}>
+                      <div className={itemClassName} onClick={() => setShowAccountSettingModal({ payload: 'account' })}>
                         <div>{t('common.userProfile.settings')}</div>
                       </div>
                     </Menu.Item>
@@ -106,15 +106,19 @@ export default function AppSelector() {
                         <ArrowUpRight className='hidden w-[14px] h-[14px] text-gray-500 group-hover:flex' />
                       </Link>
                     </Menu.Item> */}
-                    {/* <Menu.Item>
-                      <div className={classNames(itemClassName, 'justify-between')} onClick={() => setAboutVisible(true)}>
-                        <div>{t('common.userProfile.about')}</div>
-                        <div className='flex items-center'>
-                          <div className='mr-2 text-xs font-normal text-gray-500'>{langeniusVersionInfo.current_version}</div>
-                          <Indicator color={langeniusVersionInfo.current_version === langeniusVersionInfo.latest_version ? 'green' : 'orange'} />
-                        </div>
-                      </div>
-                    </Menu.Item> */}
+                    {
+                      document?.body?.getAttribute('data-public-site-about') !== 'hide' && (
+                        {/* <Menu.Item>
+                          <div className={classNames(itemClassName, 'justify-between')} onClick={() => setAboutVisible(true)}>
+                            <div>{t('common.userProfile.about')}</div>
+                            <div className='flex items-center'>
+                              <div className='mr-2 text-xs font-normal text-gray-500'>{langeniusVersionInfo.current_version}</div>
+                              <Indicator color={langeniusVersionInfo.current_version === langeniusVersionInfo.latest_version ? 'green' : 'orange'} />
+                            </div>
+                          </div>
+                        </Menu.Item> */}
+                      )
+                    }
                   </div>
                   <Menu.Item>
                     <div className='p-1' onClick={() => handleLogout()}>
@@ -132,9 +136,6 @@ export default function AppSelector() {
           )
         }
       </Menu>
-      {
-        settingVisible && <AccountSetting onCancel={() => setSettingVisible(false)} />
-      }
       {
         aboutVisible && <AccountAbout onCancel={() => setAboutVisible(false)} langeniusVersionInfo={langeniusVersionInfo} />
       }

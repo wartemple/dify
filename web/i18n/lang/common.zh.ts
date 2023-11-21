@@ -29,6 +29,8 @@ const translation = {
     getForFree: '免费获取',
     reload: '刷新',
     ok: '好的',
+    log: '日志',
+    learnMore: '了解更多',
   },
   placeholder: {
     input: '请输入',
@@ -66,6 +68,9 @@ const translation = {
         '用于限制回复的最大长度，以 token 为单位。\n较大的值可能会限制给提示词、聊天记录和数据集留出的空间。\n建议将其设置在三分之二以下。',
       maxTokenSettingTip: '您设置的最大 tokens 数较大，可能会导致 prompt、用户问题、数据集内容没有 token 空间进行处理，建议设置到 2/3 以下。',
       setToCurrentModelMaxTokenTip: '最大令牌数更新为当前模型最大的令牌数 {{maxToken}} 的 80%。',
+      stop_sequences: '停止序列 stop_sequences',
+      stop_sequencesTip: '最多四个序列，API 将停止生成更多的 token。返回的文本将不包含停止序列。',
+      stop_sequencesPlaceholder: '输入序列并按 Tab 键',
     },
     tone: {
       Creative: '创意',
@@ -73,6 +78,7 @@ const translation = {
       Precise: '精确',
       Custom: '自定义',
     },
+    addMoreModel: '添加更多模型',
   },
   menus: {
     status: 'beta',
@@ -103,6 +109,7 @@ const translation = {
     provider: '模型供应商',
     dataSource: '数据来源',
     plugin: '插件',
+    apiBasedExtension: 'API 扩展',
   },
   account: {
     avatar: '头像',
@@ -131,7 +138,7 @@ const translation = {
     owner: '所有者',
     admin: '管理员',
     adminTip: '能够建立应用程序和管理团队设置',
-    normal: '正常人',
+    normal: '成员',
     normalTip: '只能使用应用程序，不能建立应用程序',
     inviteTeamMember: '添加团队成员',
     inviteTeamMemberTip: '对方在登录后可以访问你的团队数据。',
@@ -216,6 +223,9 @@ const translation = {
     },
   },
   modelProvider: {
+    notConfigured: '系统模型尚未完全配置，部分功能可能无法使用。',
+    systemModelSettings: '系统模型设置',
+    systemModelSettingsLink: '为什么需要设置系统模型？',
     selectModel: '选择您的模型',
     setupModelFirst: '请先设置您的模型',
     systemReasoningModel: {
@@ -230,6 +240,10 @@ const translation = {
       key: '语音转文本模型',
       tip: '设置对话中语音转文字输入的默认使用模型。',
     },
+    rerankModel: {
+      key: 'Rerank 模型',
+      tip: '重排序模型将根据候选文档列表与用户问题语义匹配度进行重新排序，从而改进语义排序的结果',
+    },
     quota: '额度',
     searchModel: '搜索模型',
     noModelFound: '找不到模型 {{model}}',
@@ -237,6 +251,9 @@ const translation = {
     showMoreModelProvider: '显示更多模型提供商',
     selector: {
       tip: '该模型已被删除。请添模型或选择其他模型。',
+      emptyTip: '无可用模型',
+      emptySetting: '请前往设置进行配置',
+      rerankTip: '请设置 Rerank 模型',
     },
     card: {
       quota: '额度',
@@ -294,6 +311,34 @@ const translation = {
       keyFrom: '从 SerpAPI 帐户页面获取您的 SerpAPI 密钥',
     },
   },
+  apiBasedExtension: {
+    title: 'API 扩展提供了一个集中式的 API 管理，在此统一添加 API 配置后，方便在 Dify 上的各类应用中直接使用。',
+    link: '了解如何开发您自己的 API 扩展。',
+    linkUrl: 'https://docs.dify.ai/v/zh-hans/advanced/api_based_extension',
+    add: '新增 API 扩展',
+    selector: {
+      title: 'API 扩展',
+      placeholder: '请选择 API 扩展',
+      manage: '管理 API 扩展',
+    },
+    modal: {
+      title: '新增 API 扩展',
+      editTitle: '编辑 API 扩展',
+      name: {
+        title: '名称',
+        placeholder: '请输入名称',
+      },
+      apiEndpoint: {
+        title: 'API Endpoint',
+        placeholder: '请输入 API endpoint',
+      },
+      apiKey: {
+        title: 'API-key',
+        placeholder: '请输入 API-key',
+        lengthError: 'API-key 不能少于 5 位',
+      },
+    },
+  },
   about: {
     changeLog: '更新日志',
     updateNow: '现在更新',
@@ -316,7 +361,7 @@ const translation = {
   },
   datasetMenus: {
     documents: '文档',
-    hitTesting: '命中测试',
+    hitTesting: '召回测试',
     settings: '设置',
     emptyTip: ' 数据集尚未关联，请前往应用程序或插件完成关联。',
     viewDoc: '查看文档',
@@ -347,10 +392,63 @@ const translation = {
       title: '引用',
       linkToDataset: '跳转至数据集',
       characters: '字符：',
-      hitCount: '命中次数：',
+      hitCount: '召回次数：',
       vectorHash: '向量哈希：',
-      hitScore: '命中得分：',
+      hitScore: '召回得分：',
     },
+  },
+  promptEditor: {
+    placeholder: '在这里写你的提示词，输入\'{\' 插入变量、输入\'/\' 插入提示内容块',
+    context: {
+      item: {
+        title: '上下文',
+        desc: '插入上下文模板',
+      },
+      modal: {
+        title: '有 {{num}} 个数据集在上下文中',
+        add: '添加上下文',
+        footer: '您可以在下面的“上下文”部分中管理上下文。',
+      },
+    },
+    history: {
+      item: {
+        title: '会话历史',
+        desc: '插入历史消息模板',
+      },
+      modal: {
+        title: '示例',
+        user: '你好',
+        assistant: '你好！今天我能为您提供什么帮助？',
+        edit: '编辑对话角色名称',
+      },
+    },
+    variable: {
+      item: {
+        title: '变量 & 外部工具',
+        desc: '插入变量和外部工具',
+      },
+      modal: {
+        add: '添加新变量',
+        addTool: '添加工具',
+      },
+    },
+    query: {
+      item: {
+        title: '查询内容',
+        desc: '插入用户查询模板',
+      },
+    },
+    existed: 'Prompt 中已存在',
+  },
+  imageUploader: {
+    uploadFromComputer: '从本地上传',
+    uploadFromComputerReadError: '图片读取失败，请重新选择。',
+    uploadFromComputerUploadError: '图片上传失败，请重新上传。',
+    uploadFromComputerLimit: '上传图片不能超过 {{size}} MB',
+    pasteImageLink: '粘贴图片链接',
+    pasteImageLinkInputPlaceholder: '将图像链接粘贴到此处',
+    pasteImageLinkInvalid: '图片链接无效',
+    imageUpload: '图片上传',
   },
 }
 

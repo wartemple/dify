@@ -6,7 +6,7 @@ from langchain.schema import HumanMessage
 
 from core.helper import encrypter
 from core.model_providers.models.base import BaseProviderModel
-from core.model_providers.models.entity.model_params import ModelKwargsRules, KwargRule, ModelType
+from core.model_providers.models.entity.model_params import ModelKwargsRules, KwargRule, ModelType, ModelMode
 from core.model_providers.models.llm.bob_fintech_ai_model import BOBFinTechAIModel
 from core.model_providers.providers.base import BaseModelProvider, CredentialsValidateFailedError
 from core.third_party.langchain.llms.bob_fintech_ai import BOBFinTechChatLLM
@@ -134,3 +134,6 @@ class BOBFinTechAIProvider(BaseModelProvider):
         :return:
         """
         return self.get_provider_credentials(obfuscated)
+
+    def _get_text_generation_model_mode(self, model_name) -> str:
+        return ModelMode.COMPLETION.value

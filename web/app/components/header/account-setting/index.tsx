@@ -53,12 +53,12 @@ export default function AccountSetting({
           icon: <Users01 className={iconClassName} />,
           activeIcon: <Users01Solid className={iconClassName} />,
         },
-        {
-          key: 'provider',
-          name: t('common.settings.provider'),
-          icon: <CubeOutline className={iconClassName} />,
-          activeIcon: <CubeOutline className={iconClassName} />,
-        },
+        // {
+        //   key: 'provider',
+        //   name: t('common.settings.provider'),
+        //   icon: <CubeOutline className={iconClassName} />,
+        //   activeIcon: <CubeOutline className={iconClassName} />,
+        // },
         // {
         //   key: 'data-source',
         //   name: t('common.settings.dataSource'),

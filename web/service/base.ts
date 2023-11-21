@@ -246,11 +246,7 @@ const baseFetch = <T>(
                   Toast.notify({ type: 'error', message: 'Invalid token' })
                   return bodyJson.then((data: T) => Promise.reject(data))
                 }
-                // 二次开发
                 const loginUrl = `${globalThis.location.origin}/signin`
-                // if (process.env.UNIFIED_LOGIN_SWITCH !== 'false') {
-                //   loginUrl = 'https://ai.bobfintech.com.cn/iam/login'
-                // }
                 if (IS_CE_EDITION) {
                   bodyJson.then((data: ResponseError) => {
                     if (data.code === 'not_setup') {

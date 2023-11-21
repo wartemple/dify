@@ -23,7 +23,7 @@ const Header = () => {
     <>
       <div className='flex items-center'>
         <Link href="/apps" className='flex items-center mr-4'>
-          <LogoSite />
+          {/* <LogoSite /> */}
         </Link>
         {/* <GithubStar /> */}
       </div>

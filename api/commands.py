@@ -794,6 +794,28 @@ def reset_password(email):
     db.session.commit()
 
 
+@click.command('save_extensions')
+@click.option("--name", default='', help="账号名称")
+def save_extensions(name):
+    import json
+    from services.api_based_extension_service import APIBasedExtensionService
+    from models.api_based_extension import APIBasedExtension
+
+    with open('extensions.json', 'r', encoding='utf-8') as f:
+        extensions = json.load(f.read())
+        for extension in extensions:
+            if name and extension['name'] != name:
+                continue
+            for account in Account.query.all():
+                extension_data = APIBasedExtension(
+                    tenant_id=account.current_tenant_id,
+                    name=extension['name'],
+                    api_endpoint=extension['api_endpoint'],
+                    api_key=extension['api_key']
+                )
+                APIBasedExtensionService.save(extension_data)
+
+
 def register_commands(app):
     app.cli.add_command(reset_password)
     app.cli.add_command(reset_email)

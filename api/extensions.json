@@ -1,0 +1,5 @@
+[{
+    "name": "知识库查询接口",
+    "api_endpoint": "http://172.16.5.243:8090/api/knowledge_server",
+    "api_key": "bobfintechai"
+}]

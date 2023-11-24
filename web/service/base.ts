@@ -224,7 +224,8 @@ const baseFetch = <T>(
     options.body = JSON.stringify(body)
 
   // for those do not support native fetch stream, we use fetch-readablestream as polyfill
-  const doFetch = supportNativeFetchStream ? globalThis.fetch : fetchStream
+  // const doFetch = supportNativeFetchStream ? globalThis.fetch : fetchStream
+  const doFetch = globalThis.fetch
 
   // Handle timeout
   return Promise.race([

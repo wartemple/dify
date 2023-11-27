@@ -15,10 +15,11 @@ class InputData(BaseModel):
 @app.post("/api/knowledge_server")
 async def dify_receive(data: InputData = Body(...), authorization: str = Header(None)):
     expected_api_key = os.getenv("API_KEY", "bobfintechai")
-    auth_scheme, _, api_key = authorization.partition(' ')
+    if authorization is not None:
+        auth_scheme, _, api_key = authorization.partition(' ')
 
-    if auth_scheme.lower() != "bearer" or api_key != expected_api_key:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        if auth_scheme.lower() != "bearer" or api_key != expected_api_key:
+            raise HTTPException(status_code=401, detail="Unauthorized")
 
     point = data.point
 
@@ -38,21 +39,29 @@ async def dify_receive(data: InputData = Body(...), authorization: str = Header(
 
 
 def handle_app_external_data_tool_query(params: dict):
-    app_id = params.get("app_id")
-    tool_variable = params.get("tool_variable")
-    inputs = params.get("inputs")
-    query = params.get("query")
-
     # for debug
     pprint(params)
+    def extract_query(params):
+        if params.get("query"):
+            return params.get("query")
+        if params.get("inputs").get("question"):
+            return params['inputs']["question"]
+        if params.get("inputs").get("message"):
+            return params['inputs']["message"]
+        return ''.join([str(_) for _ in params.get("inputs", {}).values()])
 
     api_url = os.getenv("API_URL")
     if api_url:
-        res = httpx.post(api_url, json={
-            "query": query,
-            "user_id": "",
-            "threshold": 0.35
-        })
+        try:
+            res = httpx.post(api_url, json={
+                "query": extract_query(params),
+                "user_id": "",
+                "threshold": 0.35
+            }, timeout=15)
+        except httpx.ReadTimeout as e:
+            pprint(e)
+            return {"result": ""}
+
         pprint(res.json())
         results = ""
         for item in res.json()["data"]["recalls"]:

@@ -28,7 +28,7 @@ from extensions.ext_database import db
 from libs.rsa import generate_key_pair
 from models.account import InvitationCode, Tenant, TenantAccountJoin
 from models.dataset import Dataset, DatasetQuery, Document, DatasetCollectionBinding
-from models.model import Account, AppModelConfig, App
+from models.model import Account, AppModelConfig, App, MessageAnnotation, Message
 import secrets
 import base64
 
@@ -749,6 +749,30 @@ def migrate_default_input_to_dataset_query_variable(batch_size):
             pbar.update(len(data_batch))
 
 
+@click.command('add-annotation-question-field-value', help='add annotation question value')
+def add_annotation_question_field_value():
+    click.echo(click.style('Start add annotation question value.', fg='green'))
+    message_annotations = db.session.query(MessageAnnotation).all()
+    message_annotation_deal_count = 0
+    if message_annotations:
+        for message_annotation in message_annotations:
+            try:
+                if message_annotation.message_id and not message_annotation.question:
+                    message = db.session.query(Message).filter(
+                        Message.id == message_annotation.message_id
+                    ).first()
+                    message_annotation.question = message.query
+                    db.session.add(message_annotation)
+                    db.session.commit()
+                    message_annotation_deal_count += 1
+            except Exception as e:
+                click.echo(
+                    click.style('Add annotation question value error: {} {}'.format(e.__class__.__name__, str(e)),
+                                fg='red'))
+            click.echo(
+                click.style(f'Congratulations! add annotation question value successful. Deal count {message_annotation_deal_count}', fg='green'))
+
+
 @click.command('migrate_update_custom_model_config')
 def migrate_update_custom_model_config():
     import os
@@ -830,5 +854,6 @@ def register_commands(app):
     app.cli.add_command(normalization_collections)
     app.cli.add_command(migrate_default_input_to_dataset_query_variable)
     app.cli.add_command(add_qdrant_full_text_index)
+    app.cli.add_command(add_annotation_question_field_value)
     app.cli.add_command(migrate_update_custom_model_config)
     app.cli.add_command(delete_all_provider)

@@ -2,10 +2,16 @@
 
 import { createContext, useContext } from 'use-context-selector'
 import useSWR from 'swr'
+import { useEffect, useState } from 'react'
 import { fetchDefaultModal, fetchModelList, fetchSupportRetrievalMethods } from '@/service/common'
 import { ModelFeature, ModelType } from '@/app/components/header/account-setting/model-page/declarations'
 import type { BackendModel } from '@/app/components/header/account-setting/model-page/declarations'
 import type { RETRIEVE_METHOD } from '@/types/app'
+import { Plan, type UsagePlanInfo } from '@/app/components/billing/type'
+import { fetchCurrentPlanInfo } from '@/service/billing'
+import { parseCurrentPlan } from '@/app/components/billing/utils'
+import { defaultPlan } from '@/app/components/billing/config'
+
 const ProviderContext = createContext<{
   textGenerationModelList: BackendModel[]
   embeddingsModelList: BackendModel[]
@@ -16,6 +22,7 @@ const ProviderContext = createContext<{
   textGenerationDefaultModel?: BackendModel
   mutateTextGenerationDefaultModel: () => void
   embeddingsDefaultModel?: BackendModel
+  isEmbeddingsDefaultModelValid: boolean
   mutateEmbeddingsDefaultModel: () => void
   speech2textDefaultModel?: BackendModel
   mutateSpeech2textDefaultModel: () => void
@@ -23,23 +30,50 @@ const ProviderContext = createContext<{
   isRerankDefaultModelVaild: boolean
   mutateRerankDefaultModel: () => void
   supportRetrievalMethods: RETRIEVE_METHOD[]
+  plan: {
+    type: Plan
+    usage: UsagePlanInfo
+    total: UsagePlanInfo
+  }
+  isFetchedPlan: boolean
+  enableBilling: boolean
+  enableReplaceWebAppLogo: boolean
 }>({
       textGenerationModelList: [],
       embeddingsModelList: [],
       speech2textModelList: [],
       rerankModelList: [],
       agentThoughtModelList: [],
-      updateModelList: () => {},
+      updateModelList: () => { },
       textGenerationDefaultModel: undefined,
-      mutateTextGenerationDefaultModel: () => {},
+      mutateTextGenerationDefaultModel: () => { },
       speech2textDefaultModel: undefined,
-      mutateSpeech2textDefaultModel: () => {},
+      mutateSpeech2textDefaultModel: () => { },
       embeddingsDefaultModel: undefined,
-      mutateEmbeddingsDefaultModel: () => {},
+      isEmbeddingsDefaultModelValid: false,
+      mutateEmbeddingsDefaultModel: () => { },
       rerankDefaultModel: undefined,
       isRerankDefaultModelVaild: false,
-      mutateRerankDefaultModel: () => {},
+      mutateRerankDefaultModel: () => { },
       supportRetrievalMethods: [],
+      plan: {
+        type: Plan.sandbox,
+        usage: {
+          vectorSpace: 32,
+          buildApps: 12,
+          teamMembers: 1,
+          annotatedResponse: 1,
+        },
+        total: {
+          vectorSpace: 200,
+          buildApps: 50,
+          teamMembers: 1,
+          annotatedResponse: 10,
+        },
+      },
+      isFetchedPlan: false,
+      enableBilling: false,
+      enableReplaceWebAppLogo: false,
     })
 
 export const useProviderContext = () => useContext(ProviderContext)
@@ -69,6 +103,10 @@ export const ProviderContextProvider = ({
     item => item.model_name === rerankDefaultModel?.model_name && item.model_provider.provider_name === rerankDefaultModel?.model_provider.provider_name,
   )
 
+  const isEmbeddingsDefaultModelValid = !!embeddingsModelList?.find(
+    item => item.model_name === embeddingsDefaultModel?.model_name && item.model_provider.provider_name === embeddingsDefaultModel?.model_provider.provider_name,
+  )
+
   const updateModelList = (type: ModelType) => {
     if (type === ModelType.textGeneration)
       mutateTextGenerationModelList()
@@ -79,6 +117,30 @@ export const ProviderContextProvider = ({
     if (type === ModelType.reranking)
       mutateRerankModelList()
   }
+
+  const [plan, setPlan] = useState(defaultPlan)
+  const [isFetchedPlan, setIsFetchedPlan] = useState(false)
+  const [enableBilling, setEnableBilling] = useState(true)
+  const [enableReplaceWebAppLogo, setEnableReplaceWebAppLogo] = useState(false)
+  useEffect(() => {
+    (async () => {
+      const data = await fetchCurrentPlanInfo()
+      const enabled = data.billing.enabled
+      setEnableBilling(enabled)
+      setEnableReplaceWebAppLogo(data.can_replace_logo)
+      if (enabled) {
+        setPlan(parseCurrentPlan(data))
+        // setPlan(parseCurrentPlan({
+        //   ...data,
+        //   annotation_quota_limit: {
+        //     ...data.annotation_quota_limit,
+        //     limit: 10,
+        //   },
+        // }))
+        setIsFetchedPlan(true)
+      }
+    })()
+  }, [])
 
   return (
     <ProviderContext.Provider value={{
@@ -96,8 +158,13 @@ export const ProviderContextProvider = ({
       mutateSpeech2textDefaultModel,
       rerankDefaultModel,
       isRerankDefaultModelVaild,
+      isEmbeddingsDefaultModelValid,
       mutateRerankDefaultModel,
       supportRetrievalMethods: supportRetrievalMethods?.retrieval_method || [],
+      plan,
+      isFetchedPlan,
+      enableBilling,
+      enableReplaceWebAppLogo,
     }}>
       {children}
     </ProviderContext.Provider>

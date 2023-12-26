@@ -6,7 +6,6 @@ import type {
   CodeBasedExtension,
   CommonResponse,
   DataSourceNotion,
-  DocumentsLimitResponse,
   FileUploadConfigResponse,
   ICurrentWorkspace,
   IWorkspace,
@@ -108,6 +107,10 @@ export const fetchCurrentWorkspace: Fetcher<ICurrentWorkspace, { url: string; pa
   return get<ICurrentWorkspace>(url, { params })
 }
 
+export const updateCurrentWorkspace: Fetcher<ICurrentWorkspace, { url: string; body: Record<string, any> }> = ({ url, body }) => {
+  return post<ICurrentWorkspace>(url, { body })
+}
+
 export const fetchWorkspaces: Fetcher<{ workspaces: IWorkspace[] }, { url: string; params: Record<string, any> }> = ({ url, params }) => {
   return get<{ workspaces: IWorkspace[] }>(url, { params })
 }
@@ -197,10 +200,6 @@ export const submitFreeQuota: Fetcher<{ type: string; redirect_url?: string; res
 
 export const fetchFileUploadConfig: Fetcher<FileUploadConfigResponse, { url: string }> = ({ url }) => {
   return get<FileUploadConfigResponse>(url)
-}
-
-export const fetchDocumentsLimit: Fetcher<DocumentsLimitResponse, string> = (url) => {
-  return get<DocumentsLimitResponse>(url)
 }
 
 export const fetchFreeQuotaVerify: Fetcher<{ result: string; flag: boolean; reason: string }, string> = (url) => {

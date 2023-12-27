@@ -12,7 +12,7 @@
 如果 flask db upgrade error:
 执行 flask db history
 查看是否有多个head
-合并多个head: flask db merge heads -m "merging two heads"
+合并多个head: flask db merge heads -m "merging three heads"
 之后执行 flask db upgrade 
 ```
 
